@@ -122,12 +122,23 @@ export function convertAutomationConfigToNodes(config: any): {
   const savedPositions = cafeMetadata?.node_positions || transpilerMetadata?.nodes || {};
   const nodeMapping = cafeMetadata?.node_mapping || {};
 
+  console.log('C.A.F.E.: Loading automation with metadata:', {
+    hasCafeMetadata: !!cafeMetadata,
+    hasTranspilerMetadata: !!transpilerMetadata,
+    savedPositionsCount: Object.keys(savedPositions).length,
+    nodeMappingCount: Object.keys(nodeMapping).length,
+    savedPositions,
+    nodeMapping,
+  });
 
   let xOffset = 100;
   const baseYOffset = 100;
   const nodeSpacing = 300;
   const branchYOffset = 150; // Vertical spacing between branches
   let previousNodeId: string | null = null;
+
+  // Track global node index for mapping (like in save process)
+  let globalNodeIndex = 0;
 
   // Helper to get position for a node (use saved position if available, otherwise calculate)
   const getNodePosition = (nodeId: string, defaultX: number, defaultY: number) => {
@@ -167,37 +178,49 @@ export function convertAutomationConfigToNodes(config: any): {
         : [config.trigger];
 
     for (const [index, trigger] of triggers.entries()) {
-      // First try to find exact match in transpiler metadata
+      // Try to get node ID from CAFE metadata node mapping first
       let nodeId;
-      if (transpilerMetadata?.nodes) {
-        const triggerKeys = Object.keys(transpilerMetadata.nodes).filter(key => key.startsWith('trigger-'));
+      const mappingKey = `trigger-${globalNodeIndex}`; // Use global index, not trigger index
+      if (nodeMapping[mappingKey]) {
+        nodeId = nodeMapping[mappingKey];
+        console.log(`C.A.F.E.: Found trigger mapping ${mappingKey} -> ${nodeId}`);
+      } else if (transpilerMetadata?.nodes) {
+        // Fallback to transpiler metadata
+        const triggerKeys = Object.keys(transpilerMetadata.nodes).filter((key) =>
+          key.startsWith('trigger-')
+        );
         nodeId = triggerKeys[index];
+        console.log(`C.A.F.E.: Using transpiler metadata for trigger ${index} -> ${nodeId}`);
+      } else {
+        // Generate new ID as final fallback
+        nodeId = `trigger_${Date.now()}_${index}`;
+        console.log(`C.A.F.E.: Generated new trigger ID: ${nodeId}`);
       }
-      
-      // Fallback to mapping or generate new ID
-      if (!nodeId) {
-        const mappingKey = `trigger-${index}`;
-        nodeId = nodeMapping[mappingKey] || `trigger_${Date.now()}_${index}`;
-      }
-      
+
       const defaultPosition = { x: xOffset, y: baseYOffset + index * 120 };
-      
+
+      // Clean up conflicting fields - remove 'trigger' field if 'platform' exists or will be set
+      const cleanedTrigger = { ...trigger };
+      delete cleanedTrigger.trigger; // Remove conflicting 'trigger' field
+      delete cleanedTrigger.domain; // Remove 'domain' field as it conflicts with 'platform'
+
       nodesToCreate.push({
         id: nodeId,
         type: 'trigger',
         position: getNodePosition(nodeId, defaultPosition.x, defaultPosition.y),
         data: {
-          ...trigger, // Spread all original properties first
-          alias: trigger.alias || `Trigger ${index + 1}`, // Only override alias if not present
-          platform: trigger.platform || trigger.trigger || trigger.domain || 'device', // Ensure platform is set
+          ...cleanedTrigger,
+          alias: trigger.alias || `Trigger ${index + 1}`,
+          platform: trigger.platform || trigger.trigger || trigger.domain || 'device', // Derive platform from available fields
         },
       });
 
       triggerNodes.push(nodeId);
+      globalNodeIndex++; // Increment global index for each node created
     }
-
-    xOffset += nodeSpacing;
   }
+
+  xOffset += nodeSpacing;
 
   // Create condition nodes (top-level conditions)
   if (config.conditions || config.condition) {
@@ -211,7 +234,7 @@ export function convertAutomationConfigToNodes(config: any): {
       const mappingKey = `condition-${index}`;
       const originalId = nodeMapping[mappingKey];
       const nodeId = originalId || `condition-${Date.now()}-${index}`;
-      
+
       nodesToCreate.push({
         id: nodeId,
         type: 'condition',
@@ -256,19 +279,25 @@ export function convertAutomationConfigToNodes(config: any): {
 
     for (const [index, processedAction] of processedActions.entries()) {
       const { action, branch, parentConditionId } = processedAction;
-      
+
       let nodeId = action._conditionId;
       if (!nodeId) {
-        // Try to find exact match in transpiler metadata
-        if (transpilerMetadata?.nodes) {
-          const actionKeys = Object.keys(transpilerMetadata.nodes).filter(key => key.startsWith('action-'));
+        // Try to get node ID from CAFE metadata node mapping first
+        const mappingKey = `action-${globalNodeIndex}`; // Use global index
+        if (nodeMapping[mappingKey]) {
+          nodeId = nodeMapping[mappingKey];
+          console.log(`C.A.F.E.: Found action mapping ${mappingKey} -> ${nodeId}`);
+        } else if (transpilerMetadata?.nodes) {
+          // Fallback to transpiler metadata
+          const actionKeys = Object.keys(transpilerMetadata.nodes).filter((key) =>
+            key.startsWith('action-')
+          );
           nodeId = actionKeys[index];
-        }
-        
-        // Fallback to mapping or generate new ID
-        if (!nodeId) {
-          const mappingKey = `action-${index}`;
-          nodeId = nodeMapping[mappingKey] || `action_${Date.now()}_${index}`;
+          console.log(`C.A.F.E.: Using transpiler metadata for action ${index} -> ${nodeId}`);
+        } else {
+          // Generate new ID as final fallback
+          nodeId = `action_${Date.now()}_${index}`;
+          console.log(`C.A.F.E.: Generated new action ID: ${nodeId}`);
         }
       }
 
@@ -367,6 +396,7 @@ export function convertAutomationConfigToNodes(config: any): {
       }
 
       previousNodeId = nodeId;
+      globalNodeIndex++; // Increment global index for each action node created
       xOffset += nodeSpacing;
     }
   }

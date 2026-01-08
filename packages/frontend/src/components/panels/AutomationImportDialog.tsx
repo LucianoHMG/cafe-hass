@@ -38,7 +38,7 @@ interface HaAutomation {
 export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { hass, config: hassConfig } = useHass();
-  const { setFlowName, reset } = useFlowStore();
+  const { setFlowName, setAutomationId, reset } = useFlowStore();
 
   // Get all automations from HA
   const automations = useMemo(() => {
@@ -89,9 +89,10 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         automation.attributes.friendly_name
       );
 
-      // Reset current flow and set name
+      // Reset current flow and set name and ID
       reset();
       setFlowName(automation.attributes.friendly_name || automationId);
+      setAutomationId(automationId); // Set the automation ID for future updates
 
       if (config) {
         // Convert automation config to visual nodes
@@ -118,6 +119,10 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
           `Automation "${automation.attributes.friendly_name || automationId}" imported successfully!`
         );
       } else {
+        // Even if we couldn't fetch config, still set the automation ID
+        // so that if user creates a flow with the same name, it will update instead of create new
+        setAutomationId(automationId);
+        
         toast.warning(
           `Automation "${automation.attributes.friendly_name || automationId}" opened!`,
           {

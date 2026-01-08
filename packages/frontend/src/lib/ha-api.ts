@@ -395,14 +395,13 @@ export class HomeAssistantAPI {
       // Generate a numeric ID like Home Assistant uses
       const automationId = config.id || Date.now().toString();
       
-      // Ensure the config has the required fields for Home Assistant
+      // Ensure the config has the required fields for Home Assistant (plural forms)
       const configWithId = {
         id: automationId,
         alias: config.alias || `C.A.F.E. Automation ${automationId}`,
         description: config.description || '',
-        trigger: config.trigger || config.triggers || [],
-        condition: config.condition || config.conditions || [],
-        action: config.action || config.actions || [],
+        triggers: config.trigger || config.triggers || [],
+        actions: config.action || config.actions || [],
         mode: config.mode || 'single',
         variables: config.variables || {}
       };
@@ -465,29 +464,27 @@ export class HomeAssistantAPI {
    */
   async updateAutomation(automationId: string, config: AutomationConfig): Promise<void> {
     try {
-      // Ensure the config has the correct ID and structure for update
+      console.log('C.A.F.E.: Updating automation with ID:', automationId);
+      console.log('C.A.F.E.: Update config:', config);
+      
+      // Ensure the config has the correct structure that HA expects (plural forms)
       const configWithId = {
         id: automationId,
         alias: config.alias || `C.A.F.E. Automation ${automationId}`,
         description: config.description || '',
-        trigger: config.trigger || config.triggers || [],
-        condition: config.condition || config.conditions || [],
-        action: config.action || config.actions || [],
+        triggers: config.trigger || config.triggers || [],
+        actions: config.action || config.actions || [],
         mode: config.mode || 'single',
         variables: config.variables || {}
       };
       
-      // Use the automation config PUT endpoint to update existing automation
-      await this.fetchRestAPI(`config/automation/config/${automationId}`, 'PUT', configWithId);
+      console.log('C.A.F.E.: Final update payload:', configWithId);
       
-      // Reload automations after update
-      if (this.hass?.callService) {
-        try {
-          await this.hass.callService('automation', 'reload', {});
-        } catch (reloadError) {
-          console.warn('C.A.F.E.: Failed to reload automations after update:', reloadError);
-        }
-      }
+      // Use POST method for updates (HA doesn't support PUT for automation config updates)
+      await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
+      
+      console.log('C.A.F.E.: Successfully updated automation:', automationId);
+      
     } catch (error) {
       console.error('C.A.F.E.: Failed to update automation:', error);
       throw new Error(`Failed to update automation: ${error instanceof Error ? error.message : 'Unknown error'}`);

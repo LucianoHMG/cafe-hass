@@ -344,6 +344,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       throw new Error('No automation ID set. Use saveAutomation() for new automations.');
     }
     
+    console.log('C.A.F.E.: Updating automation with ID from store:', state.automationId);
+    
     set({ isSaving: true });
     
     try {
