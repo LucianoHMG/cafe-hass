@@ -57,8 +57,8 @@ export function TraceSimulator() {
 
         if (currentNode?.type === 'condition') {
           // For conditions, randomly determine true/false
-          const result = conditionResults[currentNodeId] ?? Math.random() > 0.5;
-          const nextEdge = outEdges.find(
+          const result: boolean = conditionResults[currentNodeId] ?? Math.random() > 0.5;
+          const nextEdge: any = outEdges.find(
             (e) => e.sourceHandle === (result ? 'true' : 'false')
           );
           currentNodeId = nextEdge?.target ?? null;

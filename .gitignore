@@ -37,4 +37,4 @@ yarn-error.log*
 .env.*.local
 
 # Home Assistant
-custom_components/flow_automator/www/
+custom_components/cafe/www/

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
   Node,
   Edge,
@@ -8,8 +8,9 @@ import {
   applyEdgeChanges,
   NodeChange,
   EdgeChange,
-} from '@xyflow/react';
-import type { FlowGraph, FlowNode, FlowEdge } from '@hflow/shared';
+} from "@xyflow/react";
+import type { FlowGraph, FlowNode, FlowEdge } from "@hflow/shared";
+import { generateUUID } from "@/lib/utils";
 
 /**
  * Node data types for React Flow
@@ -30,36 +31,36 @@ export interface ConditionNodeData {
   entity_id?: string;
   state?: string;
   template?: string;
-  
+
   // Numeric state conditions
   above?: number;
   below?: number;
-  
+
   // Time conditions
   after?: string;
   before?: string;
   weekday?: string | string[];
-  
+
   // Zone conditions
   zone?: string;
-  
+
   // Sun conditions
   after_offset?: string;
   before_offset?: string;
-  
+
   // Device conditions
   device_id?: string;
   domain?: string;
   type?: string;
   subtype?: string;
-  
+
   // Template conditions
   value_template?: string;
-  
+
   // Generic conditions
   attribute?: string;
   for?: string | { hours?: number; minutes?: number; seconds?: number };
-  
+
   [key: string]: unknown;
 }
 
@@ -78,6 +79,7 @@ export interface ActionNodeData {
 export interface DelayNodeData {
   alias?: string;
   delay: string | { hours?: number; minutes?: number; seconds?: number };
+  [key: string]: unknown;
 }
 
 export interface WaitNodeData {
@@ -85,6 +87,7 @@ export interface WaitNodeData {
   wait_template?: string;
   timeout?: string;
   continue_on_timeout?: boolean;
+  [key: string]: unknown;
 }
 
 export type FlowNodeData =
@@ -143,9 +146,9 @@ interface FlowState {
 }
 
 const initialState = {
-  flowId: crypto.randomUUID(),
-  flowName: 'Untitled Automation',
-  flowDescription: '',
+  flowId: generateUUID(),
+  flowName: "Untitled Automation",
+  flowDescription: "",
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -190,9 +193,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   updateNodeData: (nodeId, data) =>
     set((state) => ({
       nodes: state.nodes.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, ...data } }
-          : node
+        node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
       ),
     })),
 
@@ -213,8 +214,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   startSimulation: () =>
     set({ isSimulating: true, executionPath: [], activeNodeId: null }),
-  stopSimulation: () =>
-    set({ isSimulating: false, activeNodeId: null }),
+  stopSimulation: () => set({ isSimulating: false, activeNodeId: null }),
   setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
   addToExecutionPath: (nodeId) =>
     set((state) => ({
@@ -230,9 +230,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       description: state.flowDescription || undefined,
       nodes: state.nodes.map((n) => ({
         id: n.id,
-        type: n.type as FlowNode['type'],
+        type: n.type as FlowNode["type"],
         position: n.position,
-        data: n.data as FlowNode['data'],
+        data: n.data as FlowNode["data"],
       })) as FlowNode[],
       edges: state.edges.map((e) => ({
         id: e.id,
@@ -240,10 +240,11 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         target: e.target,
         sourceHandle: e.sourceHandle,
         targetHandle: e.targetHandle,
-        label: typeof e.label === 'string' ? e.label : undefined,
+        label: typeof e.label === "string" ? e.label : undefined,
       })) as FlowEdge[],
       metadata: {
-        mode: 'single',
+        mode: "single",
+        initial_state: true,
       },
       version: 1,
     };
@@ -253,7 +254,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       flowId: graph.id,
       flowName: graph.name,
-      flowDescription: graph.description || '',
+      flowDescription: graph.description || "",
       nodes: graph.nodes.map((n) => ({
         id: n.id,
         type: n.type,
@@ -271,5 +272,5 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       selectedNodeId: null,
     }),
 
-  reset: () => set({ ...initialState, flowId: crypto.randomUUID() }),
+  reset: () => set({ ...initialState, flowId: generateUUID() }),
 }));

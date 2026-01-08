@@ -1,11 +1,11 @@
 {
-  "domain": "flow_automator",
+  "domain": "cafe",
   "name": "C.A.F.E.",
   "version": "0.1.0",
   "codeowners": [],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": ["frontend", "http"],
-  "documentation": "https://github.com/your-username/hflow",
+  "documentation": "https://github.com/FezVrasta/cafe-hass",
   "iot_class": "local_push",
   "requirements": []
 }

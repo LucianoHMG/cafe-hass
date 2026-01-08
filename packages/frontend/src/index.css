@@ -1,6 +1,41 @@
+@import '@xyflow/react/dist/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Ensure C.A.F.E. styles take precedence over Home Assistant styles */
+@layer cafe-overrides {
+  cafe-panel,
+  cafe-panel * {
+    box-sizing: border-box !important;
+  }
+  
+  /* Force Tailwind base styles to apply */
+  cafe-panel {
+    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+    line-height: 1.5 !important;
+    -webkit-text-size-adjust: 100% !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  
+  /* Ensure React Flow styles take precedence */
+  cafe-panel .react-flow {
+    direction: ltr !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Ensure Tailwind utilities work */
+  cafe-panel .bg-white { background-color: rgb(255 255 255) !important; }
+  cafe-panel .bg-gray-100 { background-color: rgb(243 244 246) !important; }
+  cafe-panel .text-gray-900 { color: rgb(17 24 39) !important; }
+  cafe-panel .p-4 { padding: 1rem !important; }
+  cafe-panel .flex { display: flex !important; }
+  cafe-panel .items-center { align-items: center !important; }
+  cafe-panel .justify-between { justify-content: space-between !important; }
+  cafe-panel .gap-4 { gap: 1rem !important; }
+}
 
 @layer base {
   :root {

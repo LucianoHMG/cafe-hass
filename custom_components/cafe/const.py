@@ -1,6 +1,6 @@
 """Constants for C.A.F.E.."""
 
-DOMAIN = "flow_automator"
-PANEL_URL = "/flow_automator_panel"
+DOMAIN = "cafe"
+PANEL_URL = "/cafe_panel"
 PANEL_TITLE = "C.A.F.E."
 PANEL_ICON = "mdi:graph"

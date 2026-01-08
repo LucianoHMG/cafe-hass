@@ -9,8 +9,8 @@ import {
   type NodeTypes,
   type OnSelectionChangeParams,
   Panel,
+  MarkerType,
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
 
 import { useFlowStore } from '@/store/flow-store';
 import {
@@ -123,16 +123,16 @@ export function FlowCanvas() {
 
       // Determine edge styling based on state
       let edgeStyle = { strokeWidth: 2, stroke: '#64748b' };
-      let markerEnd = { type: 'arrowclosed', color: '#64748b' };
+      let markerEnd = { type: MarkerType.ArrowClosed, color: '#64748b' };
 
       if (isActiveInSimulation) {
         // Simulation takes precedence - green for active path
         edgeStyle = { stroke: '#22c55e', strokeWidth: 3 };
-        markerEnd = { type: 'arrowclosed', color: '#22c55e' };
+        markerEnd = { type: MarkerType.ArrowClosed, color: '#22c55e' };
       } else if (isConnectedToSelected) {
         // Blue highlighting for connected edges
         edgeStyle = { stroke: '#3b82f6', strokeWidth: 3 };
-        markerEnd = { type: 'arrowclosed', color: '#3b82f6' };
+        markerEnd = { type: MarkerType.ArrowClosed, color: '#3b82f6' };
       }
 
       return {
@@ -160,7 +160,7 @@ export function FlowCanvas() {
           type: 'smoothstep',
           style: { strokeWidth: 2, stroke: '#64748b' },
           markerEnd: {
-            type: 'arrowclosed',
+            type: MarkerType.ArrowClosed,
             color: '#64748b',
           },
         }}
@@ -169,6 +169,7 @@ export function FlowCanvas() {
         snapGrid={[15, 15]}
         deleteKeyCode={['Backspace', 'Delete']}
         className="bg-slate-50"
+        proOptions={{ hideAttribution: true }}
       >
         <Background
           variant={BackgroundVariant.Dots}

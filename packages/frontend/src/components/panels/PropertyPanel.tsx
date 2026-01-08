@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useFlowStore } from '@/store/flow-store';
 import { useHass } from '@/hooks/useHass';
+import { useHassContext } from '@/App';
 import { EntitySelector } from '@/components/ui/EntitySelector';
 
 export function PropertyPanel() {
@@ -10,6 +11,23 @@ export function PropertyPanel() {
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
   const removeNode = useFlowStore((s) => s.removeNode);
   const { entities, getAllServices, getServiceDefinition } = useHass();
+  const { hass } = useHassContext();
+  
+  // Use entities from context if available (HA integration), otherwise from hook (standalone)
+  const effectiveEntities = useMemo(() => {
+    if (hass?.states) {
+      return Object.values(hass.states).map((state: any) => ({
+        entity_id: state.entity_id,
+        state: state.state,
+        attributes: state.attributes || {},
+        last_changed: state.last_changed || '',
+        last_updated: state.last_updated || ''
+      }));
+    }
+    return entities;
+  }, [hass, entities]);
+  
+  console.log('C.A.F.E. PropertyPanel: Using entities:', effectiveEntities.length, 'from', hass?.states ? 'HA context' : 'hook');
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId),
@@ -30,7 +48,7 @@ export function PropertyPanel() {
 
   // Handle platform change - clear fields that don't apply to the new platform
   const handlePlatformChange = (newPlatform: string) => {
-    const fieldsToKeep = ['alias', 'platform'];
+
     const currentData = selectedNode.data as Record<string, unknown>;
 
     // Build new data with only the alias and platform
@@ -68,7 +86,7 @@ export function PropertyPanel() {
     <div className="p-4 space-y-4 overflow-y-auto flex-1">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm text-slate-700">
-          {selectedNode.type.charAt(0).toUpperCase() + selectedNode.type.slice(1)} Properties
+          {selectedNode.type ? selectedNode.type.charAt(0).toUpperCase() + selectedNode.type.slice(1) : 'Node'} Properties
         </h3>
         <button
           onClick={() => removeNode(selectedNode.id)}
@@ -124,7 +142,7 @@ export function PropertyPanel() {
                 <EntitySelector
                   value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
                   onChange={(value) => handleChange('entity_id', value)}
-                  entities={entities}
+                  entities={effectiveEntities}
                   placeholder="Select entity..."
                 />
               </div>
@@ -305,7 +323,7 @@ export function PropertyPanel() {
                 <EntitySelector
                   value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
                   onChange={(value) => handleChange('entity_id', value)}
-                  entities={entities}
+                  entities={effectiveEntities}
                   placeholder="Select entity..."
                 />
               </div>
@@ -449,7 +467,7 @@ export function PropertyPanel() {
                   <EntitySelector
                     value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
                     onChange={(value) => handleChange('entity_id', value)}
-                    entities={entities}
+                    entities={effectiveEntities}
                     placeholder="Select person or device tracker..."
                   />
                 </div>
@@ -580,7 +598,7 @@ export function PropertyPanel() {
                     ((selectedNode.data as Record<string, unknown>).target as Record<string, unknown>)?.entity_id as string || ''
                   }
                   onChange={(value) => handleNestedChange('target', 'entity_id', value)}
-                  entities={entities}
+                  entities={effectiveEntities}
                   placeholder="Select target entity..."
                 />
               </div>

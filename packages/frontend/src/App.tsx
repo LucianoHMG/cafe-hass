@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import {
-  FileJson,
-  Save,
-  FolderOpen,
   Settings,
   Info,
   Loader2,
@@ -24,10 +21,30 @@ import { ImportYamlDialog } from "@/components/panels/ImportYamlDialog";
 import { useFlowStore } from "@/store/flow-store";
 import { useHass } from "@/hooks/useHass";
 import { cn } from "@/lib/utils";
+import { createContext, useContext } from "react";
+
+// Home Assistant context for passing data from custom element
+interface HassContextValue {
+  hass?: any;
+  narrow?: boolean;
+  route?: any;
+  panel?: any;
+}
+
+const HassContext = createContext<HassContextValue>({});
+
+export const useHassContext = () => useContext(HassContext);
+
+interface AppProps {
+  hass?: any;
+  narrow?: boolean;
+  route?: any;
+  panel?: any;
+}
 
 type RightPanelTab = "properties" | "yaml" | "simulator";
 
-function App() {
+function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}) {
   const {
     isStandalone,
     isRemote,
@@ -36,6 +53,10 @@ function App() {
     config,
     setConfig,
   } = useHass();
+  
+  // Use external hass if provided (from HA), otherwise use hook
+  const effectiveHass = externalHass || (isStandalone ? null : undefined);
+  console.log('C.A.F.E. App: Using hass data:', !!effectiveHass, effectiveHass?.states ? Object.keys(effectiveHass.states).length : 0);
   const { flowName, setFlowName, toFlowGraph, fromFlowGraph, reset } =
     useFlowStore();
   const [rightTab, setRightTab] = useState<RightPanelTab>("properties");
@@ -110,7 +131,8 @@ function App() {
   const status = getConnectionStatus();
 
   return (
-    <ReactFlowProvider>
+    <HassContext.Provider value={{ hass: effectiveHass, narrow, route, panel }}>
+      <ReactFlowProvider>
       <div className="h-screen flex flex-col bg-slate-100">
         {/* Header */}
         <header className="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm">
@@ -294,7 +316,8 @@ function App() {
         isOpen={importYamlOpen}
         onClose={() => setImportYamlOpen(false)}
       />
-    </ReactFlowProvider>
+      </ReactFlowProvider>
+    </HassContext.Provider>
   );
 }
 

@@ -340,14 +340,38 @@ export function useHass() {
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Check if running inside HA's iframe
-  const hasWindowHass = typeof window !== 'undefined' && !!(window as unknown as { hass?: unknown }).hass;
-
-  // Determine the mode
-  const isEmbedded = hasWindowHass;
-  const hasRemoteConfig = !!(config.url && config.token);
-  const isStandalone = !isEmbedded && !hasRemoteConfig;
-  const isRemote = !isEmbedded && hasRemoteConfig;
+  // Check if running inside HA's iframe or panel
+  const isInHomeAssistant = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check for window.hass
+    const hassWindow = window as unknown as { hass?: unknown };
+    if (hassWindow.hass) return true;
+    
+    // Check if we're in an iframe with HA context
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentHass = (window.parent as unknown as { hass?: unknown }).hass;
+        if (parentHass) return true;
+      }
+    } catch {
+      // Cross-origin iframe access blocked, but we might still be in HA
+    }
+    
+    // Check URL patterns that indicate we're running in HA
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+    
+    // If served from /cafe_static/ path, we're likely in HA
+    if (pathname.includes('/cafe_static/')) return true;
+    
+    // If hostname looks like HA (not localhost dev server)
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.includes('5173')) {
+      return true;
+    }
+    
+    return false;
+  }, []);
 
   // Save config handler
   const setConfig = useCallback((newConfig: HassConfig) => {
@@ -359,9 +383,99 @@ export function useHass() {
     setConnectionError(null);
   }, []);
 
+  // Auto-configure for HA when detected
+  useEffect(() => {
+    if (isInHomeAssistant && !config.url && !config.token) {
+      // Auto-configure for current HA instance
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      
+      console.log('C.A.F.E.: Detected running in Home Assistant, attempting auto-configuration...');
+      
+      // Try to get auth token from HA context
+      try {
+        const hassWindow = window as unknown as { 
+          hass?: { 
+            auth?: { accessToken?: string };
+            connection?: { accessToken?: string };
+            user?: { access_token?: string };
+          } 
+        };
+        
+        let token = hassWindow.hass?.auth?.accessToken;
+        
+        // Try alternative token locations
+        if (!token) {
+          token = hassWindow.hass?.connection?.accessToken;
+        }
+        if (!token) {
+          token = hassWindow.hass?.user?.access_token;
+        }
+        
+        // If no direct access, try parent window
+        if (!token && window.parent && window.parent !== window) {
+          try {
+            const parentHass = (window.parent as unknown as { 
+              hass?: { 
+                auth?: { accessToken?: string };
+                connection?: { accessToken?: string };
+                user?: { access_token?: string };
+              } 
+            }).hass;
+            
+            token = parentHass?.auth?.accessToken || 
+                   parentHass?.connection?.accessToken || 
+                   parentHass?.user?.access_token;
+          } catch (e) {
+            console.log('C.A.F.E.: Cross-origin access to parent blocked:', e);
+          }
+        }
+        
+        // Try accessing via top window
+        if (!token && window.top && window.top !== window) {
+          try {
+            const topHass = (window.top as unknown as { 
+              hass?: { 
+                auth?: { accessToken?: string };
+                connection?: { accessToken?: string };
+              } 
+            }).hass;
+            
+            token = topHass?.auth?.accessToken || topHass?.connection?.accessToken;
+          } catch (e) {
+            console.log('C.A.F.E.: Cross-origin access to top window blocked:', e);
+          }
+        }
+        
+        if (token) {
+          console.log('C.A.F.E.: Successfully extracted auth token, configuring connection');
+          setConfig({ url: baseUrl, token });
+          return;
+        } else {
+          console.warn('C.A.F.E.: Could not extract auth token from HA context');
+        }
+      } catch (error) {
+        console.warn('C.A.F.E.: Error during auth token extraction:', error);
+      }
+      
+      // Fallback: Set URL and prompt user for token
+      console.log('C.A.F.E.: Setting URL without token, user will need to provide long-lived access token');
+      setConfig({ url: baseUrl, token: '' });
+    }
+  }, [isInHomeAssistant, config.url, config.token, setConfig]);
+
+  const hasWindowHass = typeof window !== 'undefined' && !!(window as unknown as { hass?: unknown }).hass;
+
+  // Determine the mode
+  const isEmbedded = hasWindowHass || isInHomeAssistant;
+  const hasRemoteConfig = !!(config.url && config.token);
+  const isStandalone = !isEmbedded && !hasRemoteConfig;
+  const isRemote = !isEmbedded && hasRemoteConfig;
+
   // Fetch data from remote HA instance
   useEffect(() => {
     if (!isRemote) return;
+
+    console.log('C.A.F.E.: Fetching data from Home Assistant...', { url: config.url, hasToken: !!config.token });
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -373,18 +487,27 @@ export function useHass() {
           'Content-Type': 'application/json',
         };
 
+        console.log('C.A.F.E.: Fetching states from', `${config.url}/api/states`);
+        
         // Fetch states
         const statesResponse = await fetch(`${config.url}/api/states`, { headers });
         if (!statesResponse.ok) {
-          throw new Error(`Failed to fetch states: ${statesResponse.status}`);
+          const errorText = await statesResponse.text();
+          console.error('C.A.F.E.: States fetch failed:', statesResponse.status, errorText);
+          throw new Error(`Failed to fetch states: ${statesResponse.status} - ${errorText}`);
         }
         const states: HassEntity[] = await statesResponse.json();
+        console.log('C.A.F.E.: Successfully fetched', states.length, 'entities');
         setRemoteEntities(states);
 
+        console.log('C.A.F.E.: Fetching services from', `${config.url}/api/services`);
+        
         // Fetch services
         const servicesResponse = await fetch(`${config.url}/api/services`, { headers });
         if (!servicesResponse.ok) {
-          throw new Error(`Failed to fetch services: ${servicesResponse.status}`);
+          const errorText = await servicesResponse.text();
+          console.error('C.A.F.E.: Services fetch failed:', servicesResponse.status, errorText);
+          throw new Error(`Failed to fetch services: ${servicesResponse.status} - ${errorText}`);
         }
         const servicesData: Array<{ domain: string; services: Record<string, HassService> }> = await servicesResponse.json();
 
@@ -393,6 +516,7 @@ export function useHass() {
         for (const item of servicesData) {
           servicesMap[item.domain] = item.services;
         }
+        console.log('C.A.F.E.: Successfully fetched services for domains:', Object.keys(servicesMap));
         setRemoteServices(servicesMap);
 
       } catch (error) {
