@@ -1,11 +1,11 @@
 import type {
+  ActionNode,
+  ConditionNode,
+  DelayNode,
+  FlowEdge,
   FlowGraph,
   FlowNode,
-  FlowEdge,
   TriggerNode,
-  ConditionNode,
-  ActionNode,
-  DelayNode,
   WaitNode,
 } from '@hflow/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
@@ -27,7 +27,8 @@ import { BaseStrategy, type HAYamlOutput } from './base';
  */
 export class StateMachineStrategy extends BaseStrategy {
   readonly name = 'state-machine';
-  readonly description = 'Generates state machine YAML for complex flows with cycles or cross-links';
+  readonly description =
+    'Generates state machine YAML for complex flows with cycles or cross-links';
 
   canHandle(_analysis: TopologyAnalysis): boolean {
     // State machine can handle any topology
@@ -95,7 +96,7 @@ export class StateMachineStrategy extends BaseStrategy {
       // Initialize the state machine variables
       {
         variables: {
-          current_node: (entryNodeId),
+          current_node: entryNodeId,
           flow_context: {},
         },
       },
@@ -218,8 +219,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateActionBlock(node: ActionNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
-    const currentNodeId = (node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+    const currentNodeId = node.id;
     const alias = this.generateAlias(node);
 
     const actionCall: Record<string, unknown> = {
@@ -275,9 +276,9 @@ export class StateMachineStrategy extends BaseStrategy {
 
     const trueTargetId = trueEdge?.target ?? 'END';
     const falseTargetId = falseEdge?.target ?? 'END';
-    const trueTarget = trueTargetId === 'END' ? 'END' : (trueTargetId);
-    const falseTarget = falseTargetId === 'END' ? 'END' : (falseTargetId);
-    const currentNodeId = (node.id);
+    const trueTarget = trueTargetId === 'END' ? 'END' : trueTargetId;
+    const falseTarget = falseTargetId === 'END' ? 'END' : falseTargetId;
+    const currentNodeId = node.id;
 
     // Generate Jinja2 template for condition evaluation
     const conditionTemplate = this.buildConditionTemplate(node);
@@ -306,8 +307,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateDelayBlock(node: DelayNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
-    const currentNodeId = (node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+    const currentNodeId = node.id;
     const alias = this.generateAlias(node);
 
     return {
@@ -336,8 +337,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateWaitBlock(node: WaitNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
-    const currentNodeId = (node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+    const currentNodeId = node.id;
     const alias = this.generateAlias(node);
 
     const waitAction: Record<string, unknown> = {
@@ -379,8 +380,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generatePassthroughBlock(node: FlowNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
-    const currentNodeId = (node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : nextNodeId;
+    const currentNodeId = node.id;
 
     return {
       conditions: [
@@ -426,13 +427,14 @@ export class StateMachineStrategy extends BaseStrategy {
       case 'numeric_state':
         return this.buildNumericCondition(data);
 
-      case 'template':
+      case 'template': {
         // Strip outer {{ }} if present
         let template = data.template || 'true';
         if (template.startsWith('{{') && template.endsWith('}}')) {
           template = template.slice(2, -2).trim();
         }
         return template;
+      }
 
       case 'time':
         return this.buildTimeCondition(data);
@@ -474,8 +476,8 @@ export class StateMachineStrategy extends BaseStrategy {
     const valueExpr = data.value_template
       ? `(${data.value_template})`
       : data.attribute
-      ? `state_attr('${data.entity_id}', '${data.attribute}') | float`
-      : `states('${data.entity_id}') | float`;
+        ? `state_attr('${data.entity_id}', '${data.attribute}') | float`
+        : `states('${data.entity_id}') | float`;
 
     if (data.above !== undefined) {
       parts.push(`${valueExpr} > ${data.above}`);
@@ -559,5 +561,4 @@ export class StateMachineStrategy extends BaseStrategy {
       'break the cycle, or the automation may run indefinitely.'
     );
   }
-
 }

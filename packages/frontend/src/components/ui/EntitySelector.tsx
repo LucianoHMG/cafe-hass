@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { ChevronDown, Search, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ChevronDown, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { HassEntity } from '@/hooks/useHass';
+import { cn } from '@/lib/utils';
 
 interface EntitySelectorProps {
   value: string;
@@ -167,7 +167,7 @@ export function EntitySelector({
   const dropdown = isOpen && (
     <div
       ref={dropdownRef}
-      className="fixed z-[9999] bg-white border rounded-md shadow-lg"
+      className="fixed z-[9999] rounded-md border bg-white shadow-lg"
       style={{
         top: dropdownPosition.top,
         left: dropdownPosition.left,
@@ -175,16 +175,16 @@ export function EntitySelector({
       }}
     >
       {/* Search input */}
-      <div className="p-2 border-b">
+      <div className="border-b p-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             ref={inputRef}
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search entities..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded border py-1.5 pr-3 pl-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -192,15 +192,13 @@ export function EntitySelector({
       {/* Entity list */}
       <div className="max-h-64 overflow-y-auto">
         {Object.keys(groupedEntities).length === 0 ? (
-          <div className="p-3 text-sm text-slate-500 text-center">
-            No entities found
-          </div>
+          <div className="p-3 text-center text-slate-500 text-sm">No entities found</div>
         ) : (
           Object.entries(groupedEntities).map(([domain, domainEntities]) => {
             const domainInfo = getDomainInfo(`${domain}.x`);
             return (
               <div key={domain}>
-                <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 sticky top-0">
+                <div className="sticky top-0 bg-slate-50 px-3 py-1.5 font-semibold text-slate-500 text-xs">
                   {domainInfo.label} ({domainEntities.length})
                 </div>
                 {domainEntities.map((entity) => (
@@ -209,31 +207,25 @@ export function EntitySelector({
                     type="button"
                     onClick={() => handleSelect(entity.entity_id)}
                     className={cn(
-                      'w-full px-3 py-2 text-sm text-left',
-                      'hover:bg-blue-50 transition-colors',
+                      'w-full px-3 py-2 text-left text-sm',
+                      'transition-colors hover:bg-blue-50',
                       'flex items-center gap-2',
                       entity.entity_id === normalizedValue && 'bg-blue-50'
                     )}
                   >
                     <span
                       className={cn(
-                        'px-1.5 py-0.5 text-xs font-medium rounded flex-shrink-0',
+                        'flex-shrink-0 rounded px-1.5 py-0.5 font-medium text-xs',
                         domainInfo.color
                       )}
                     >
                       {domainInfo.label}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">
-                        {getEntityName(entity)}
-                      </div>
-                      <div className="truncate text-xs text-slate-400">
-                        {entity.entity_id}
-                      </div>
+                      <div className="truncate font-medium">{getEntityName(entity)}</div>
+                      <div className="truncate text-slate-400 text-xs">{entity.entity_id}</div>
                     </div>
-                    <span className="text-xs text-slate-400 flex-shrink-0">
-                      {entity.state}
-                    </span>
+                    <span className="flex-shrink-0 text-slate-400 text-xs">{entity.state}</span>
                   </button>
                 ))}
               </div>
@@ -252,43 +244,35 @@ export function EntitySelector({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'w-full px-3 py-2 text-sm border rounded-md text-left',
+          'w-full rounded-md border px-3 py-2 text-left text-sm',
           'focus:outline-none focus:ring-2 focus:ring-blue-500',
           'flex items-center justify-between gap-2',
-          'bg-white hover:bg-slate-50 transition-colors'
+          'bg-white transition-colors hover:bg-slate-50'
         )}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {selectedEntity ? (
             <>
               <span
                 className={cn(
-                  'px-1.5 py-0.5 text-xs font-medium rounded flex-shrink-0',
+                  'flex-shrink-0 rounded px-1.5 py-0.5 font-medium text-xs',
                   selectedInfo?.color
                 )}
               >
                 {selectedInfo?.label}
               </span>
-              <span className="truncate">
-                {getEntityName(selectedEntity)}
-              </span>
+              <span className="truncate">{getEntityName(selectedEntity)}</span>
             </>
           ) : (
             <span className="text-slate-400">{placeholder}</span>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex flex-shrink-0 items-center gap-1">
           {value && (
-            <X
-              className="w-4 h-4 text-slate-400 hover:text-slate-600"
-              onClick={handleClear}
-            />
+            <X className="h-4 w-4 text-slate-400 hover:text-slate-600" onClick={handleClear} />
           )}
           <ChevronDown
-            className={cn(
-              'w-4 h-4 text-slate-400 transition-transform',
-              isOpen && 'rotate-180'
-            )}
+            className={cn('h-4 w-4 text-slate-400 transition-transform', isOpen && 'rotate-180')}
           />
         </div>
       </button>

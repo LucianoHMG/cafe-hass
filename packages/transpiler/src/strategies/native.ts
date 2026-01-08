@@ -1,4 +1,12 @@
-import type { FlowGraph, FlowNode, TriggerNode, ConditionNode, ActionNode, DelayNode, WaitNode } from '@hflow/shared';
+import type {
+  ActionNode,
+  ConditionNode,
+  DelayNode,
+  FlowGraph,
+  FlowNode,
+  TriggerNode,
+  WaitNode,
+} from '@hflow/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
 
@@ -36,11 +44,13 @@ export class NativeStrategy extends BaseStrategy {
       actions = this.buildSequenceFromNode(flow, uniqueFirstActions[0], new Set());
     } else if (uniqueFirstActions.length > 1) {
       // Multiple paths from triggers - use parallel
-      actions = [{
-        parallel: uniqueFirstActions.map((nodeId) =>
-          this.buildSequenceFromNode(flow, nodeId, new Set())
-        ),
-      }];
+      actions = [
+        {
+          parallel: uniqueFirstActions.map((nodeId) =>
+            this.buildSequenceFromNode(flow, nodeId, new Set())
+          ),
+        },
+      ];
     } else {
       actions = [];
       warnings.push('No actions found after trigger nodes');
@@ -103,11 +113,7 @@ export class NativeStrategy extends BaseStrategy {
   /**
    * Recursively build action sequence from a node
    */
-  private buildSequenceFromNode(
-    flow: FlowGraph,
-    nodeId: string,
-    visited: Set<string>
-  ): unknown[] {
+  private buildSequenceFromNode(flow: FlowGraph, nodeId: string, visited: Set<string>): unknown[] {
     if (visited.has(nodeId)) {
       return []; // Avoid infinite loops
     }
@@ -134,11 +140,7 @@ export class NativeStrategy extends BaseStrategy {
       // The choose is already part of buildNodeAction for conditions
     } else if (outgoing.length === 1) {
       // Single outgoing edge - continue the sequence
-      const nextActions = this.buildSequenceFromNode(
-        flow,
-        outgoing[0].target,
-        new Set(visited)
-      );
+      const nextActions = this.buildSequenceFromNode(flow, outgoing[0].target, new Set(visited));
       sequence.push(...nextActions);
     } else if (outgoing.length > 1) {
       // Multiple outgoing edges (parallel paths)

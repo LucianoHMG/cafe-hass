@@ -1,8 +1,19 @@
-import { useCallback, useState } from 'react';
-import { Play, Square, RotateCcw } from 'lucide-react';
-import { useFlowStore } from '@/store/flow-store';
 import { FlowTranspiler } from '@hflow/transpiler';
+import { Play, RotateCcw, Square } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import type { Edge } from '@xyflow/react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { useFlowStore } from '@/store/flow-store';
 
 export function TraceSimulator() {
   const {
@@ -58,9 +69,8 @@ export function TraceSimulator() {
         if (currentNode?.type === 'condition') {
           // For conditions, randomly determine true/false
           const result: boolean = conditionResults[currentNodeId] ?? Math.random() > 0.5;
-          const nextEdge: any = outEdges.find(
-            (e) => e.sourceHandle === (result ? 'true' : 'false')
-          );
+          const nextEdge: Edge | null =
+            outEdges.find((e) => e.sourceHandle === (result ? 'true' : 'false')) || null;
           currentNodeId = nextEdge?.target ?? null;
         } else if (outEdges.length > 0) {
           // For other nodes, follow the first edge
@@ -106,84 +116,77 @@ export function TraceSimulator() {
   const conditionNodes = nodes.filter((n) => n.type === 'condition');
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-slate-700">Trace Simulator</h3>
+        <h3 className="font-semibold text-foreground text-sm">Trace Simulator</h3>
         <div className="flex gap-1">
           {!isSimulating ? (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={simulate}
               disabled={nodes.length === 0}
               className={cn(
-                'p-2 rounded transition-colors',
+                'h-8 w-8 p-0',
                 nodes.length === 0
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-green-100 text-green-600 hover:bg-green-200'
+                  ? 'text-muted-foreground'
+                  : 'border-green-200 text-green-600 hover:bg-green-50'
               )}
-              title="Start simulation"
             >
-              <Play className="w-4 h-4" />
-            </button>
+              <Play className="h-4 w-4" />
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleStop}
-              className="p-2 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-              title="Stop simulation"
+              className="h-8 w-8 border-red-200 p-0 text-red-600 hover:bg-red-50"
             >
-              <Square className="w-4 h-4" />
-            </button>
+              <Square className="h-4 w-4" />
+            </Button>
           )}
-          <button
-            onClick={handleReset}
-            className="p-2 rounded hover:bg-slate-100 text-slate-600 transition-colors"
-            title="Reset"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          <Button variant="ghost" size="sm" onClick={handleReset} className="h-8 w-8 p-0">
+            <RotateCcw className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
       {/* Speed control */}
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">
+      <div className="space-y-2">
+        <Label className="font-medium text-muted-foreground text-xs">
           Speed: {simulationSpeed}ms
-        </label>
-        <input
-          type="range"
+        </Label>
+        <Slider
+          value={[simulationSpeed]}
+          onValueChange={(values) => setSimulationSpeed(values[0])}
           min={200}
           max={2000}
           step={100}
-          value={simulationSpeed}
-          onChange={(e) => setSimulationSpeed(Number(e.target.value))}
           className="w-full"
         />
       </div>
 
       {/* Condition overrides */}
       {conditionNodes.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-2">
+        <div className="space-y-2">
+          <Label className="font-medium text-muted-foreground text-xs">
             Condition Outcomes (for simulation)
-          </label>
-          <div className="space-y-1">
+          </Label>
+          <div className="space-y-2">
             {conditionNodes.map((node) => (
-              <div
-                key={node.id}
-                className="flex items-center justify-between text-xs"
-              >
-                <span className="text-slate-600 truncate">
+              <div key={node.id} className="flex items-center justify-between text-xs">
+                <span className="mr-2 flex-1 truncate text-muted-foreground">
                   {(node.data as { alias?: string }).alias || node.id}
                 </span>
-                <select
+                <Select
                   value={
                     conditionResults[node.id] === true
                       ? 'true'
                       : conditionResults[node.id] === false
-                      ? 'false'
-                      : 'random'
+                        ? 'false'
+                        : 'random'
                   }
-                  onChange={(e) => {
-                    const val = e.target.value;
+                  onValueChange={(val) => {
                     if (val === 'random') {
                       setConditionResults((prev) => {
                         const { [node.id]: _, ...rest } = prev;
@@ -196,12 +199,16 @@ export function TraceSimulator() {
                       }));
                     }
                   }}
-                  className="text-xs px-2 py-1 border rounded"
                 >
-                  <option value="random">Random</option>
-                  <option value="true">True</option>
-                  <option value="false">False</option>
-                </select>
+                  <SelectTrigger className="h-6 w-20 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="random">Random</SelectItem>
+                    <SelectItem value="true">True</SelectItem>
+                    <SelectItem value="false">False</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             ))}
           </div>
@@ -210,22 +217,20 @@ export function TraceSimulator() {
 
       {/* Execution path */}
       {executionPath.length > 0 && (
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-2">
-            Execution Path
-          </label>
-          <ol className="text-xs space-y-1 list-decimal list-inside">
+        <div className="space-y-2">
+          <Label className="font-medium text-muted-foreground text-xs">Execution Path</Label>
+          <ol className="list-inside list-decimal space-y-1 text-xs">
             {executionPath.map((nodeId, i) => {
               const node = nodes.find((n) => n.id === nodeId);
               const alias = (node?.data as { alias?: string })?.alias;
               return (
                 <li
-                  key={`${nodeId}-${i}`}
+                  key={nodeId}
                   className={cn(
                     'py-0.5',
                     i === executionPath.length - 1 && isSimulating
-                      ? 'text-green-600 font-medium'
-                      : 'text-slate-600'
+                      ? 'font-medium text-green-600'
+                      : 'text-muted-foreground'
                   )}
                 >
                   {alias || nodeId}

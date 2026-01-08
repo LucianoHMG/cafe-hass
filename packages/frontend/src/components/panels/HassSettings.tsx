@@ -1,6 +1,16 @@
-import { useState, useEffect } from 'react';
-import { X, ExternalLink, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { AlertCircle, CheckCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export interface HassConfig {
   url: string;
@@ -87,161 +97,132 @@ export function HassSettings({ isOpen, onClose, config, onSave }: HassSettingsPr
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-slate-800">Home Assistant Connection</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-100 rounded transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-500" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Home Assistant Connection</DialogTitle>
+          <DialogDescription>Configure your Home Assistant connection settings.</DialogDescription>
+        </DialogHeader>
 
-        <div className="p-4 space-y-4">
+        <div className="space-y-4">
           {/* Auto-detection info */}
           {window.location.pathname.includes('/cafe_static/') && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-blue-900">Auto-detection enabled</p>
-                  <p className="text-blue-700">
-                    C.A.F.E. detected it's running in Home Assistant and will try to auto-configure the connection.
-                    {config.url && !config.token && (
-                      <span className="block mt-1">
-                        ⚠️ Please add your long-lived access token below to enable entity access.
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="mb-1 font-medium">Auto-detection enabled</p>
+                <p className="text-sm">
+                  C.A.F.E. detected it's running in Home Assistant and will try to auto-configure
+                  the connection.
+                  {config.url && !config.token && (
+                    <span className="mt-1 block">
+                      ⚠️ Please add your long-lived access token below to enable entity access.
+                    </span>
+                  )}
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Home Assistant URL
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="url">Home Assistant URL</Label>
+            <Input
+              id="url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="http://homeassistant.local:8123"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="mt-1 text-xs text-slate-500">
-              The URL of your Home Assistant instance {window.location.pathname.includes('/cafe_static/') ? '(auto-detected)' : ''}
+            <p className="text-muted-foreground text-xs">
+              The URL of your Home Assistant instance{' '}
+              {window.location.pathname.includes('/cafe_static/') ? '(auto-detected)' : ''}
             </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Long-Lived Access Token
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="token">Long-Lived Access Token</Label>
+            <Input
+              id="token"
               type="password"
               value={token}
               onChange={(e) => setToken(e.target.value)}
               placeholder="eyJ0eXAiOiJKV1QiLCJhbGci..."
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className="font-mono text-sm"
             />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-muted-foreground text-xs">
               Create one in HA: Profile → Long-Lived Access Tokens
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={testConnection}
-              disabled={status === 'testing'}
-              className={cn(
-                'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                'bg-slate-100 hover:bg-slate-200 text-slate-700',
-                status === 'testing' && 'opacity-50 cursor-not-allowed'
-              )}
-            >
+            <Button variant="outline" onClick={testConnection} disabled={status === 'testing'}>
               {status === 'testing' ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Testing...
-                </span>
+                </>
               ) : (
                 'Test Connection'
               )}
-            </button>
+            </Button>
 
             {status === 'success' && (
               <span className="flex items-center gap-1 text-green-600 text-sm">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="h-4 w-4" />
                 Connected!
               </span>
             )}
 
             {status === 'error' && (
               <span className="flex items-center gap-1 text-red-600 text-sm">
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="h-4 w-4" />
                 {errorMessage}
               </span>
             )}
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-            <h4 className="text-sm font-medium text-amber-800 mb-1">CORS Note</h4>
-            <p className="text-xs text-amber-700">
-              To connect from a browser, you may need to add CORS headers to your HA config:
-            </p>
-            <pre className="mt-2 text-xs bg-amber-100 p-2 rounded font-mono overflow-x-auto">
-{`http:
+          <Alert>
+            <AlertDescription>
+              <h4 className="mb-1 font-medium">CORS Note</h4>
+              <p className="mb-2 text-xs">
+                To connect from a browser, you may need to add CORS headers to your HA config:
+              </p>
+              <pre className="overflow-x-auto rounded bg-muted p-2 font-mono text-xs">
+                {`http:
   cors_allowed_origins:
     - http://localhost:5173`}
-            </pre>
-          </div>
+              </pre>
+            </AlertDescription>
+          </Alert>
 
-          <a
-            href="https://www.home-assistant.io/docs/authentication/#your-account-profile"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-          >
-            <ExternalLink className="w-4 h-4" />
-            How to create a Long-Lived Access Token
-          </a>
+          <Button variant="link" asChild className="h-auto p-0 text-sm">
+            <a
+              href="https://www.home-assistant.io/docs/authentication/#your-account-profile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1"
+            >
+              <ExternalLink className="h-4 w-4" />
+              How to create a Long-Lived Access Token
+            </a>
+          </Button>
         </div>
 
-        <div className="flex items-center justify-between p-4 border-t bg-slate-50">
-          <button
-            onClick={handleClear}
-            className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
-          >
+        <div className="flex items-center justify-between pt-4">
+          <Button variant="destructive" onClick={handleClear} size="sm">
             Clear & Use Mock Data
-          </button>
+          </Button>
           <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
-            >
+            <Button variant="outline" onClick={onClose} size="sm">
               Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!url || !token}
-              className={cn(
-                'px-4 py-2 text-sm font-medium rounded-md transition-colors',
-                url && token
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              )}
-            >
+            </Button>
+            <Button onClick={handleSave} disabled={!url || !token} size="sm">
               Save
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

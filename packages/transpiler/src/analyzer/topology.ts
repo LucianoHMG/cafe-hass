@@ -1,5 +1,5 @@
-import graphlib from 'graphlib';
 import type { FlowGraph } from '@hflow/shared';
+import graphlib from 'graphlib';
 
 const { Graph, alg } = graphlib;
 
@@ -67,14 +67,10 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
   const hasCycles = !alg.isAcyclic(g);
 
   // Find entry points (nodes with no incoming edges)
-  const entryNodes = flow.nodes
-    .filter((n) => g.predecessors(n.id)?.length === 0)
-    .map((n) => n.id);
+  const entryNodes = flow.nodes.filter((n) => g.predecessors(n.id)?.length === 0).map((n) => n.id);
 
   // Find exit points (nodes with no outgoing edges)
-  const exitNodes = flow.nodes
-    .filter((n) => g.successors(n.id)?.length === 0)
-    .map((n) => n.id);
+  const exitNodes = flow.nodes.filter((n) => g.successors(n.id)?.length === 0).map((n) => n.id);
 
   // Get topological order if acyclic
   let topologicalOrder: string[] | null = null;
@@ -98,10 +94,7 @@ export function analyzeTopology(flow: FlowGraph): TopologyAnalysis {
   // - Single entry point
   // - No cross-links
   // - No converging paths (except for condition branches that merge)
-  const isTree = !hasCycles &&
-                 entryNodes.length === 1 &&
-                 !hasCrossLinks &&
-                 !hasConvergingPaths;
+  const isTree = !hasCycles && entryNodes.length === 1 && !hasCrossLinks && !hasConvergingPaths;
 
   // Determine recommended strategy
   const recommendedStrategy = isTree ? 'native' : 'state-machine';
@@ -136,12 +129,12 @@ function detectCrossLinks(
   const levelMap = new Map<string, number>();
 
   // BFS from entry nodes to assign levels
-  const entryNodes = flow.nodes
-    .filter((n) => g.predecessors(n.id)?.length === 0)
-    .map((n) => n.id);
+  const entryNodes = flow.nodes.filter((n) => g.predecessors(n.id)?.length === 0).map((n) => n.id);
 
-  const queue: Array<{ nodeId: string; level: number }> =
-    entryNodes.map((id) => ({ nodeId: id, level: 0 }));
+  const queue: Array<{ nodeId: string; level: number }> = entryNodes.map((id) => ({
+    nodeId: id,
+    level: 0,
+  }));
 
   while (queue.length > 0) {
     const { nodeId, level } = queue.shift()!;
@@ -224,12 +217,12 @@ export function getNodeDepths(flow: FlowGraph): Map<string, number> {
   }
 
   const depths = new Map<string, number>();
-  const entryNodes = flow.nodes
-    .filter((n) => g.predecessors(n.id)?.length === 0)
-    .map((n) => n.id);
+  const entryNodes = flow.nodes.filter((n) => g.predecessors(n.id)?.length === 0).map((n) => n.id);
 
-  const queue: Array<{ nodeId: string; depth: number }> =
-    entryNodes.map((id) => ({ nodeId: id, depth: 0 }));
+  const queue: Array<{ nodeId: string; depth: number }> = entryNodes.map((id) => ({
+    nodeId: id,
+    depth: 0,
+  }));
 
   while (queue.length > 0) {
     const { nodeId, depth } = queue.shift()!;

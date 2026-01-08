@@ -1,27 +1,40 @@
-import { useState } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
+import { ReactFlowProvider } from '@xyflow/react';
 import {
-  Settings,
-  Info,
-  Loader2,
   AlertCircle,
-  Wifi,
-  FileCode,
+  ChevronDown,
   DiamondPlus,
+  FileCode,
   FileDown,
   FileUp,
-} from "lucide-react";
-import { FlowCanvas } from "@/components/canvas/FlowCanvas";
-import { NodePalette } from "@/components/panels/NodePalette";
-import { PropertyPanel } from "@/components/panels/PropertyPanel";
-import { YamlPreview } from "@/components/panels/YamlPreview";
-import { TraceSimulator } from "@/components/simulator/TraceSimulator";
-import { HassSettings } from "@/components/panels/HassSettings";
-import { ImportYamlDialog } from "@/components/panels/ImportYamlDialog";
-import { useFlowStore } from "@/store/flow-store";
-import { useHass } from "@/hooks/useHass";
-import { cn } from "@/lib/utils";
-import { createContext, useContext } from "react";
+  Info,
+  Loader2,
+  Settings,
+  Wifi,
+} from 'lucide-react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { FlowCanvas } from '@/components/canvas/FlowCanvas';
+import { AutomationImportDialog } from '@/components/panels/AutomationImportDialog';
+import { HassSettings } from '@/components/panels/HassSettings';
+import { ImportYamlDialog } from '@/components/panels/ImportYamlDialog';
+import { NodePalette } from '@/components/panels/NodePalette';
+import { PropertyPanel } from '@/components/panels/PropertyPanel';
+import { YamlPreview } from '@/components/panels/YamlPreview';
+import { TraceSimulator } from '@/components/simulator/TraceSimulator';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useHass } from '@/hooks/useHass';
+import { getHomeAssistantAPI } from '@/lib/ha-api';
+import { cn } from '@/lib/utils';
+import { useFlowStore } from '@/store/flow-store';
 
 // Home Assistant context for passing data from custom element
 interface HassContextValue {
@@ -42,43 +55,50 @@ interface AppProps {
   panel?: any;
 }
 
-type RightPanelTab = "properties" | "yaml" | "simulator";
+type RightPanelTab = 'properties' | 'yaml' | 'simulator';
 
 function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}) {
-  const {
-    isStandalone,
-    isRemote,
-    isLoading,
-    connectionError,
-    config,
-    setConfig,
-  } = useHass();
-  
+  const { isStandalone, isRemote, isLoading, connectionError, config, setConfig } = useHass();
+
   // Use external hass if provided (from HA), otherwise use hook
   const effectiveHass = externalHass || (isStandalone ? null : undefined);
-  console.log('C.A.F.E. App: Using hass data:', !!effectiveHass, effectiveHass?.states ? Object.keys(effectiveHass.states).length : 0);
-  const { flowName, setFlowName, toFlowGraph, fromFlowGraph, reset } =
-    useFlowStore();
-  const [rightTab, setRightTab] = useState<RightPanelTab>("properties");
+
+  // Initialize or update the API instance with current hass
+  useEffect(() => {
+    if (effectiveHass) {
+      const api = getHomeAssistantAPI(effectiveHass);
+      console.log('C.A.F.E. App: API initialized with hass data, connected:', api.isConnected());
+    }
+  }, [effectiveHass]);
+
+  console.log(
+    'C.A.F.E. App: Using hass data:',
+    !!effectiveHass,
+    effectiveHass?.states ? Object.keys(effectiveHass.states).length : 0
+  );
+  const { flowName, setFlowName, toFlowGraph, fromFlowGraph, reset } = useFlowStore();
+  const [rightTab, setRightTab] = useState<RightPanelTab>('properties');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importYamlOpen, setImportYamlOpen] = useState(false);
+  const [automationImportOpen, setAutomationImportOpen] = useState(false);
+  const [importDropdownOpen, setImportDropdownOpen] = useState(false);
 
   const handleExport = () => {
     const graph = toFlowGraph();
     const json = JSON.stringify(graph, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${flowName.replace(/\s+/g, "_").toLowerCase()}.json`;
+    a.download = `${flowName.replace(/\s+/g, '_').toLowerCase()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleImport = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -88,8 +108,8 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
         const graph = JSON.parse(text);
         fromFlowGraph(graph);
       } catch (error) {
-        console.error("Failed to import:", error);
-        alert("Failed to import flow. Please check the file format.");
+        console.error('Failed to import:', error);
+        alert('Failed to import flow. Please check the file format.');
       }
     };
     input.click();
@@ -99,29 +119,29 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
   const getConnectionStatus = () => {
     if (isLoading) {
       return {
-        label: "Connecting...",
-        className: "bg-blue-100 text-blue-700",
-        icon: <Loader2 className="w-3 h-3 animate-spin" />,
+        label: 'Connecting...',
+        className: 'bg-blue-100 text-blue-700',
+        icon: <Loader2 className="h-3 w-3 animate-spin" />,
       };
     }
     if (connectionError) {
       return {
-        label: "Connection Error",
-        className: "bg-red-100 text-red-700",
-        icon: <AlertCircle className="w-3 h-3" />,
+        label: 'Connection Error',
+        className: 'bg-red-100 text-red-700',
+        icon: <AlertCircle className="h-3 w-3" />,
       };
     }
     if (isRemote) {
       return {
-        label: "Connected",
-        className: "bg-green-100 text-green-700",
-        icon: <Wifi className="w-3 h-3" />,
+        label: 'Connected',
+        className: 'bg-green-100 text-green-700',
+        icon: <Wifi className="h-3 w-3" />,
       };
     }
     if (isStandalone) {
       return {
-        label: "Mock Data",
-        className: "bg-amber-100 text-amber-700",
+        label: 'Mock Data',
+        className: 'bg-amber-100 text-amber-700',
         icon: null,
       };
     }
@@ -133,189 +153,187 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
   return (
     <HassContext.Provider value={{ hass: effectiveHass, narrow, route, panel }}>
       <ReactFlowProvider>
-      <div className="h-screen flex flex-col bg-slate-100">
-        {/* Header */}
-        <header className="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm">
-          <div className="flex items-center gap-4">
-            <h1 className="font-bold text-lg text-slate-800">C.A.F.E.</h1>
-            <input
-              type="text"
-              value={flowName}
-              onChange={(e) => setFlowName(e.target.value)}
-              className="px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-              placeholder="Automation name"
-            />
-          </div>
+        <div className="flex h-screen flex-col bg-slate-100">
+          {/* Header */}
+          <header className="flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm">
+            <div className="flex items-center gap-4">
+              <h1
+                className="font-bold text-lg text-slate-800"
+                title="Complex Automation Flow Editor"
+              >
+                ☕ C.A.F.E.
+              </h1>
+              <Input
+                type="text"
+                value={flowName}
+                onChange={(e) => setFlowName(e.target.value)}
+                className="w-64"
+                placeholder="Automation name"
+              />
+            </div>
 
-          <div className="flex items-center gap-2">
-            {status && (
-              <button
+            <div className="flex items-center gap-2">
+              {status && (
+                <Badge
+                  onClick={() => setSettingsOpen(true)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-1.5 transition-opacity hover:opacity-80',
+                    status.className
+                  )}
+                  title="Click to configure Home Assistant connection"
+                  variant="outline"
+                >
+                  {status.icon}
+                  {status.label}
+                </Badge>
+              )}
+
+              <Button
                 onClick={() => setSettingsOpen(true)}
-                className={cn(
-                  "px-2 py-1 text-xs rounded font-medium flex items-center gap-1.5 hover:opacity-80 transition-opacity",
-                  status.className
-                )}
-                title="Click to configure Home Assistant connection"
+                variant="ghost"
+                size="icon"
+                title="Settings"
               >
-                {status.icon}
-                {status.label}
-              </button>
-            )}
+                <Settings className="h-5 w-5" />
+              </Button>
 
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+              <Separator orientation="vertical" className="h-6" />
 
-            <div className="w-px h-6 bg-slate-200" />
+              {/* Open Automation Button with Import Dropdown */}
+              <div className="flex">
+                {/* Main Open Button */}
+                <Button
+                  onClick={() => {
+                    setAutomationImportOpen(true);
+                  }}
+                  className="rounded-r-none"
+                >
+                  <DiamondPlus className="mr-2 h-4 w-4" />
+                  Open Automation
+                </Button>
 
-            <button
-              onClick={handleImport}
-              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="Import flow from JSON"
-            >
-              <FileUp className="w-5 h-5" />
-            </button>
+                {/* Dropdown Toggle */}
+                <DropdownMenu open={importDropdownOpen} onOpenChange={setImportDropdownOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="default" className="rounded-l-none border-l px-2">
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleImport}>
+                      <FileUp className="mr-2 h-4 w-4" />
+                      Import from JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setImportYamlOpen(true)}>
+                      <FileCode className="mr-2 h-4 w-4" />
+                      Import from YAML
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-            <button
-              onClick={() => setImportYamlOpen(true)}
-              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="Import from YAML"
-            >
-              <FileCode className="w-5 h-5" />
-            </button>
+              <Button
+                onClick={handleExport}
+                variant="ghost"
+                size="icon"
+                title="Export flow as JSON"
+              >
+                <FileDown className="h-5 w-5" />
+              </Button>
 
-            <button
-              onClick={handleExport}
-              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="Export flow as JSON"
-            >
-              <FileDown className="w-5 h-5" />
-            </button>
+              <Button onClick={reset} variant="ghost" size="icon" title="New flow">
+                <DiamondPlus className="h-5 w-5" />
+              </Button>
+            </div>
+          </header>
 
-            <button
-              onClick={reset}
-              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="New flow"
-            >
-              <DiamondPlus className="w-5 h-5" />
-            </button>
+          {/* Main content */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left sidebar - Node palette */}
+            <aside className="flex w-56 flex-col border-r bg-white">
+              <NodePalette />
+              <div className="border-t p-4">
+                <h4 className="mb-2 font-medium text-slate-500 text-xs">Quick Help</h4>
+                <ul className="space-y-1 text-slate-500 text-xs">
+                  <li>Click nodes to add</li>
+                  <li>Drag to connect</li>
+                  <li>Delete to remove</li>
+                  <li>Backspace/Delete key</li>
+                </ul>
+              </div>
+            </aside>
+
+            {/* Canvas */}
+            <main className="flex-1">
+              <FlowCanvas />
+            </main>
+
+            {/* Right sidebar - Properties/YAML/Simulator */}
+            <aside className="flex w-80 flex-col border-l bg-white">
+              <Tabs
+                value={rightTab}
+                onValueChange={(value) => setRightTab(value as RightPanelTab)}
+                className="flex flex-1 flex-col"
+              >
+                <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
+                  <TabsTrigger value="properties">Properties</TabsTrigger>
+                  <TabsTrigger value="yaml">YAML</TabsTrigger>
+                  <TabsTrigger value="simulator">Simulate</TabsTrigger>
+                </TabsList>
+
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <TabsContent value="properties" className="mt-0 flex-1 overflow-hidden">
+                    <PropertyPanel />
+                  </TabsContent>
+                  <TabsContent value="yaml" className="mt-0 flex-1 overflow-hidden">
+                    <YamlPreview />
+                  </TabsContent>
+                  <TabsContent value="simulator" className="mt-0 flex-1 overflow-hidden">
+                    <TraceSimulator />
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </aside>
           </div>
-        </header>
 
-        {/* Main content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left sidebar - Node palette */}
-          <aside className="w-56 bg-white border-r flex flex-col">
-            <NodePalette />
-            <div className="border-t p-4">
-              <h4 className="text-xs font-medium text-slate-500 mb-2">
-                Quick Help
-              </h4>
-              <ul className="text-xs text-slate-500 space-y-1">
-                <li>Click nodes to add</li>
-                <li>Drag to connect</li>
-                <li>Delete to remove</li>
-                <li>Backspace/Delete key</li>
-              </ul>
+          {/* Footer */}
+          <footer className="flex h-8 items-center justify-between border-t bg-white px-4 text-slate-500 text-xs">
+            <div className="flex items-center gap-4">
+              <span>C.A.F.E. v0.1.0</span>
+              {isStandalone && (
+                <span className="text-amber-600">
+                  Click the settings icon to connect to a real Home Assistant instance
+                </span>
+              )}
+              {isRemote && config.url && (
+                <span className="text-green-600">Connected to {new URL(config.url).hostname}</span>
+              )}
+              {connectionError && <span className="text-red-600">{connectionError}</span>}
             </div>
-          </aside>
-
-          {/* Canvas */}
-          <main className="flex-1">
-            <FlowCanvas />
-          </main>
-
-          {/* Right sidebar - Properties/YAML/Simulator */}
-          <aside className="w-80 bg-white border-l flex flex-col">
-            {/* Tabs */}
-            <div className="flex border-b">
-              <button
-                onClick={() => setRightTab("properties")}
-                className={cn(
-                  "flex-1 px-4 py-2.5 text-sm font-medium transition-colors",
-                  rightTab === "properties"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                Properties
-              </button>
-              <button
-                onClick={() => setRightTab("yaml")}
-                className={cn(
-                  "flex-1 px-4 py-2.5 text-sm font-medium transition-colors",
-                  rightTab === "yaml"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                YAML
-              </button>
-              <button
-                onClick={() => setRightTab("simulator")}
-                className={cn(
-                  "flex-1 px-4 py-2.5 text-sm font-medium transition-colors",
-                  rightTab === "simulator"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
-                Simulate
-              </button>
+            <div className="flex items-center gap-2">
+              <Info className="h-3 w-3" />
+              <span>Home Assistant Visual Automation Editor</span>
             </div>
-
-            {/* Panel content */}
-            <div className="flex flex-col flex-1 overflow-hidden">
-              {rightTab === "properties" && <PropertyPanel />}
-              {rightTab === "yaml" && <YamlPreview />}
-              {rightTab === "simulator" && <TraceSimulator />}
-            </div>
-          </aside>
+          </footer>
         </div>
 
-        {/* Footer */}
-        <footer className="h-8 bg-white border-t flex items-center justify-between px-4 text-xs text-slate-500">
-          <div className="flex items-center gap-4">
-            <span>C.A.F.E. v0.1.0</span>
-            {isStandalone && (
-              <span className="text-amber-600">
-                Click the settings icon to connect to a real Home Assistant
-                instance
-              </span>
-            )}
-            {isRemote && config.url && (
-              <span className="text-green-600">
-                Connected to {new URL(config.url).hostname}
-              </span>
-            )}
-            {connectionError && (
-              <span className="text-red-600">{connectionError}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Info className="w-3 h-3" />
-            <span>Home Assistant Visual Automation Editor</span>
-          </div>
-        </footer>
-      </div>
+        {/* Settings modal */}
+        <HassSettings
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          config={config}
+          onSave={setConfig}
+        />
 
-      {/* Settings modal */}
-      <HassSettings
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        config={config}
-        onSave={setConfig}
-      />
+        {/* Import YAML dialog */}
+        <ImportYamlDialog isOpen={importYamlOpen} onClose={() => setImportYamlOpen(false)} />
 
-      {/* Import YAML dialog */}
-      <ImportYamlDialog
-        isOpen={importYamlOpen}
-        onClose={() => setImportYamlOpen(false)}
-      />
+        <AutomationImportDialog
+          isOpen={automationImportOpen}
+          onClose={() => {
+            setAutomationImportOpen(false);
+          }}
+        />
       </ReactFlowProvider>
     </HassContext.Provider>
   );

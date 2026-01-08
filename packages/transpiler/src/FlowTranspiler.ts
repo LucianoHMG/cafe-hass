@@ -1,11 +1,11 @@
-import { dump as yamlDump } from 'js-yaml';
 import type { FlowGraph } from '@hflow/shared';
+import { dump as yamlDump } from 'js-yaml';
 import { analyzeTopology, type TopologyAnalysis } from './analyzer/topology';
-import { validateFlowGraph, type ValidationResult } from './analyzer/validator';
+import { type ValidationResult, validateFlowGraph } from './analyzer/validator';
+import { type ParseResult, YamlParser } from './parser/YamlParser';
+import type { HAYamlOutput, TranspilerStrategy } from './strategies/base';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
-import type { TranspilerStrategy, HAYamlOutput } from './strategies/base';
-import { YamlParser, type ParseResult } from './parser/YamlParser';
 
 /**
  * Options for YAML generation
@@ -59,10 +59,7 @@ export interface TranspileResult {
  * Main transpiler class for converting React Flow graphs to Home Assistant YAML
  */
 export class FlowTranspiler {
-  private strategies: TranspilerStrategy[] = [
-    new NativeStrategy(),
-    new StateMachineStrategy(),
-  ];
+  private strategies: TranspilerStrategy[] = [new NativeStrategy(), new StateMachineStrategy()];
 
   /**
    * Validate a flow graph input
@@ -116,7 +113,7 @@ export class FlowTranspiler {
       if (!strategy.canHandle(analysis)) {
         warnings.push(
           `Strategy "${strategy.name}" may not be optimal for this flow topology. ` +
-          `Recommended: ${analysis.recommendedStrategy}`
+            `Recommended: ${analysis.recommendedStrategy}`
         );
       }
     } else {
@@ -229,7 +226,10 @@ export class FlowTranspiler {
   /**
    * Generate C.A.F.E. metadata for position persistence
    */
-  private generateFlowAutomatorMetadata(flow: FlowGraph, strategy: TranspilerStrategy): Record<string, unknown> {
+  private generateFlowAutomatorMetadata(
+    flow: FlowGraph,
+    strategy: TranspilerStrategy
+  ): Record<string, unknown> {
     const nodePositions: Record<string, { x: number; y: number }> = {};
 
     // Extract node positions

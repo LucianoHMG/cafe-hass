@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { Command } from 'commander';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { FlowTranspiler } from './FlowTranspiler';
 import { formatValidationErrors } from './analyzer/validator';
+import { FlowTranspiler } from './FlowTranspiler';
 
 const program = new Command();
 
@@ -49,14 +49,18 @@ program
       // Check for errors
       if (!result.success) {
         console.error('Validation errors:');
-        result.errors?.forEach((e) => console.error(`  - ${e}`));
+        result.errors?.forEach((e) => {
+          console.error(`  - ${e}`);
+        });
         process.exit(1);
       }
 
       // Print warnings
       if (result.warnings.length > 0) {
         console.error('Warnings:');
-        result.warnings.forEach((w) => console.error(`  - ${w}`));
+        result.warnings.forEach((w) => {
+          console.error(`  - ${w}`);
+        });
         console.error('');
       }
 

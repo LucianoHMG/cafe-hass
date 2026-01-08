@@ -1,9 +1,20 @@
-import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
-import { useFlowStore } from '@/store/flow-store';
-import { useHass } from '@/hooks/useHass';
+import { useMemo } from 'react';
 import { useHassContext } from '@/App';
+import { Button } from '@/components/ui/button';
 import { EntitySelector } from '@/components/ui/EntitySelector';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useHass } from '@/hooks/useHass';
+import { useFlowStore } from '@/store/flow-store';
 
 export function PropertyPanel() {
   const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
@@ -12,7 +23,7 @@ export function PropertyPanel() {
   const removeNode = useFlowStore((s) => s.removeNode);
   const { entities, getAllServices, getServiceDefinition } = useHass();
   const { hass } = useHassContext();
-  
+
   // Use entities from context if available (HA integration), otherwise from hook (standalone)
   const effectiveEntities = useMemo(() => {
     if (hass?.states) {
@@ -21,13 +32,18 @@ export function PropertyPanel() {
         state: state.state,
         attributes: state.attributes || {},
         last_changed: state.last_changed || '',
-        last_updated: state.last_updated || ''
+        last_updated: state.last_updated || '',
       }));
     }
     return entities;
   }, [hass, entities]);
-  
-  console.log('C.A.F.E. PropertyPanel: Using entities:', effectiveEntities.length, 'from', hass?.states ? 'HA context' : 'hook');
+
+  console.log(
+    'C.A.F.E. PropertyPanel: Using entities:',
+    effectiveEntities.length,
+    'from',
+    hass?.states ? 'HA context' : 'hook'
+  );
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId),
@@ -48,7 +64,6 @@ export function PropertyPanel() {
 
   // Handle platform change - clear fields that don't apply to the new platform
   const handlePlatformChange = (newPlatform: string) => {
-
     const currentData = selectedNode.data as Record<string, unknown>;
 
     // Build new data with only the alias and platform
@@ -59,9 +74,26 @@ export function PropertyPanel() {
 
     // Clear all other fields by setting them to undefined
     const allPossibleFields = [
-      'entity_id', 'to', 'from', 'for', 'at', 'event_type', 'event_data',
-      'event', 'offset', 'above', 'below', 'value_template', 'template',
-      'webhook_id', 'zone', 'topic', 'payload', 'hours', 'minutes', 'seconds'
+      'entity_id',
+      'to',
+      'from',
+      'for',
+      'at',
+      'event_type',
+      'event_data',
+      'event',
+      'offset',
+      'above',
+      'below',
+      'value_template',
+      'template',
+      'webhook_id',
+      'zone',
+      'topic',
+      'payload',
+      'hours',
+      'minutes',
+      'seconds',
     ];
 
     for (const field of allPossibleFields) {
@@ -71,9 +103,10 @@ export function PropertyPanel() {
     updateNodeData(selectedNode.id, newData);
   };
 
-  const triggerPlatform = selectedNode.type === 'trigger'
-    ? (selectedNode.data as Record<string, unknown>).platform as string
-    : null;
+  const triggerPlatform =
+    selectedNode.type === 'trigger'
+      ? ((selectedNode.data as Record<string, unknown>).platform as string)
+      : null;
 
   const handleNestedChange = (parent: string, key: string, value: unknown) => {
     const parentData = (selectedNode.data as Record<string, unknown>)[parent] || {};
@@ -83,30 +116,31 @@ export function PropertyPanel() {
   };
 
   return (
-    <div className="p-4 space-y-4 overflow-y-auto flex-1">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-slate-700">
-          {selectedNode.type ? selectedNode.type.charAt(0).toUpperCase() + selectedNode.type.slice(1) : 'Node'} Properties
+        <h3 className="font-semibold text-foreground text-sm">
+          {selectedNode.type
+            ? selectedNode.type.charAt(0).toUpperCase() + selectedNode.type.slice(1)
+            : 'Node'}{' '}
+          Properties
         </h3>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => removeNode(selectedNode.id)}
-          className="p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
-          title="Delete node"
+          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash2 className="w-4 h-4" />
-        </button>
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Common: Alias */}
-      <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">
-          Alias (Display Name)
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label className="font-medium text-muted-foreground text-xs">Alias (Display Name)</Label>
+        <Input
           type="text"
-          value={(selectedNode.data as Record<string, unknown>).alias as string || ''}
+          value={((selectedNode.data as Record<string, unknown>).alias as string) || ''}
           onChange={(e) => handleChange('alias', e.target.value)}
-          className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Optional display name"
         />
       </div>
@@ -114,33 +148,33 @@ export function PropertyPanel() {
       {/* Trigger-specific fields */}
       {selectedNode.type === 'trigger' && (
         <>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Platform
-            </label>
-            <select
+          <div className="space-y-2">
+            <Label className="font-medium text-muted-foreground text-xs">Platform</Label>
+            <Select
               value={triggerPlatform || 'state'}
-              onChange={(e) => handlePlatformChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onValueChange={(value) => handlePlatformChange(value)}
             >
-              <option value="state">State Change</option>
-              <option value="numeric_state">Numeric State</option>
-              <option value="time">Time</option>
-              <option value="sun">Sun</option>
-              <option value="event">Event</option>
-              <option value="template">Template</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="state">State Change</SelectItem>
+                <SelectItem value="numeric_state">Numeric State</SelectItem>
+                <SelectItem value="time">Time</SelectItem>
+                <SelectItem value="sun">Sun</SelectItem>
+                <SelectItem value="event">Event</SelectItem>
+                <SelectItem value="template">Template</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* State trigger fields */}
           {(triggerPlatform === 'state' || triggerPlatform === 'numeric_state') && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Entity
-                </label>
+              <div className="space-y-2">
+                <Label className="font-medium text-muted-foreground text-xs">Entity</Label>
                 <EntitySelector
-                  value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
+                  value={((selectedNode.data as Record<string, unknown>).entity_id as string) || ''}
                   onChange={(value) => handleChange('entity_id', value)}
                   entities={effectiveEntities}
                   placeholder="Select entity..."
@@ -148,27 +182,23 @@ export function PropertyPanel() {
               </div>
               {triggerPlatform === 'state' && (
                 <>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      To State
-                    </label>
-                    <input
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">To State</Label>
+                    <Input
                       type="text"
-                      value={(selectedNode.data as Record<string, unknown>).to as string || ''}
+                      value={((selectedNode.data as Record<string, unknown>).to as string) || ''}
                       onChange={(e) => handleChange('to', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., on, off, home"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
                       From State (optional)
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="text"
-                      value={(selectedNode.data as Record<string, unknown>).from as string || ''}
+                      value={((selectedNode.data as Record<string, unknown>).from as string) || ''}
                       onChange={(e) => handleChange('from', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., off"
                     />
                   </div>
@@ -176,27 +206,21 @@ export function PropertyPanel() {
               )}
               {triggerPlatform === 'numeric_state' && (
                 <>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Above
-                    </label>
-                    <input
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Above</Label>
+                    <Input
                       type="text"
-                      value={(selectedNode.data as Record<string, unknown>).above as string || ''}
+                      value={((selectedNode.data as Record<string, unknown>).above as string) || ''}
                       onChange={(e) => handleChange('above', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., 20"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
-                      Below
-                    </label>
-                    <input
+                    <Label className="font-medium text-muted-foreground text-xs">Below</Label>
+                    <Input
                       type="text"
-                      value={(selectedNode.data as Record<string, unknown>).below as string || ''}
+                      value={((selectedNode.data as Record<string, unknown>).below as string) || ''}
                       onChange={(e) => handleChange('below', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., 30"
                     />
                   </div>
@@ -207,15 +231,12 @@ export function PropertyPanel() {
 
           {/* Time trigger fields */}
           {triggerPlatform === 'time' && (
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                At (time)
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="font-medium text-muted-foreground text-xs">At (time)</Label>
+              <Input
                 type="text"
-                value={(selectedNode.data as Record<string, unknown>).at as string || ''}
+                value={((selectedNode.data as Record<string, unknown>).at as string) || ''}
                 onChange={(e) => handleChange('at', e.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., 07:00:00 or input_datetime.wake_up"
               />
             </div>
@@ -224,28 +245,31 @@ export function PropertyPanel() {
           {/* Sun trigger fields */}
           {triggerPlatform === 'sun' && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Event
-                </label>
-                <select
-                  value={(selectedNode.data as Record<string, unknown>).event as string || 'sunset'}
-                  onChange={(e) => handleChange('event', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="space-y-2">
+                <Label className="font-medium text-muted-foreground text-xs">Event</Label>
+                <Select
+                  value={
+                    ((selectedNode.data as Record<string, unknown>).event as string) || 'sunset'
+                  }
+                  onValueChange={(value) => handleChange('event', value)}
                 >
-                  <option value="sunrise">Sunrise</option>
-                  <option value="sunset">Sunset</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sunrise">Sunrise</SelectItem>
+                    <SelectItem value="sunset">Sunset</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
+              <div className="space-y-2">
+                <Label className="font-medium text-muted-foreground text-xs">
                   Offset (optional)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
-                  value={(selectedNode.data as Record<string, unknown>).offset as string || ''}
+                  value={((selectedNode.data as Record<string, unknown>).offset as string) || ''}
                   onChange={(e) => handleChange('offset', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., -00:30:00"
                 />
               </div>
@@ -254,15 +278,12 @@ export function PropertyPanel() {
 
           {/* Event trigger fields */}
           {triggerPlatform === 'event' && (
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Event Type
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label className="font-medium text-muted-foreground text-xs">Event Type</Label>
+              <Input
                 type="text"
-                value={(selectedNode.data as Record<string, unknown>).event_type as string || ''}
+                value={((selectedNode.data as Record<string, unknown>).event_type as string) || ''}
                 onChange={(e) => handleChange('event_type', e.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., zha_event, call_service"
               />
             </div>
@@ -270,14 +291,14 @@ export function PropertyPanel() {
 
           {/* Template trigger fields */}
           {triggerPlatform === 'template' && (
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Value Template
-              </label>
-              <textarea
-                value={(selectedNode.data as Record<string, unknown>).value_template as string || ''}
+            <div className="space-y-2">
+              <Label className="font-medium text-muted-foreground text-xs">Value Template</Label>
+              <Textarea
+                value={
+                  ((selectedNode.data as Record<string, unknown>).value_template as string) || ''
+                }
                 onChange={(e) => handleChange('value_template', e.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                className="font-mono"
                 rows={3}
                 placeholder="{{ states('sensor.temperature') | float > 25 }}"
               />
@@ -287,437 +308,461 @@ export function PropertyPanel() {
       )}
 
       {/* Condition-specific fields */}
-      {selectedNode.type === 'condition' && (() => {
-        const conditionType = (selectedNode.data as Record<string, unknown>).condition_type as string || 'state';
-        
-        return (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Condition Type
-              </label>
-              <select
-                value={conditionType}
-                onChange={(e) => handleChange('condition_type', e.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="state">State</option>
-                <option value="numeric_state">Numeric State</option>
-                <option value="template">Template</option>
-                <option value="time">Time</option>
-                <option value="sun">Sun</option>
-                <option value="zone">Zone</option>
-                <option value="device">Device</option>
-                <option value="and">AND</option>
-                <option value="or">OR</option>
-                <option value="not">NOT</option>
-              </select>
-            </div>
+      {selectedNode.type === 'condition' &&
+        (() => {
+          const conditionType =
+            ((selectedNode.data as Record<string, unknown>).condition_type as string) || 'state';
 
-            {/* Common fields for entity-based conditions */}
-            {['state', 'numeric_state'].includes(conditionType) && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Entity
-                </label>
-                <EntitySelector
-                  value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
-                  onChange={(value) => handleChange('entity_id', value)}
-                  entities={effectiveEntities}
-                  placeholder="Select entity..."
-                />
+          return (
+            <>
+              <div className="space-y-2">
+                <Label className="font-medium text-muted-foreground text-xs">Condition Type</Label>
+                <Select
+                  value={conditionType}
+                  onValueChange={(value) => handleChange('condition_type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="state">State</SelectItem>
+                    <SelectItem value="numeric_state">Numeric State</SelectItem>
+                    <SelectItem value="template">Template</SelectItem>
+                    <SelectItem value="time">Time</SelectItem>
+                    <SelectItem value="sun">Sun</SelectItem>
+                    <SelectItem value="zone">Zone</SelectItem>
+                    <SelectItem value="device">Device</SelectItem>
+                    <SelectItem value="and">AND</SelectItem>
+                    <SelectItem value="or">OR</SelectItem>
+                    <SelectItem value="not">NOT</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {/* State condition fields */}
-            {conditionType === 'state' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).state as string || ''}
-                    onChange={(e) => handleChange('state', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., on, below_horizon"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Attribute (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).attribute as string || ''}
-                    onChange={(e) => handleChange('attribute', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., brightness, temperature"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Numeric state condition fields */}
-            {conditionType === 'numeric_state' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Above (optional)
-                  </label>
-                  <input
-                    type="number"
-                    value={(selectedNode.data as Record<string, unknown>).above as number || ''}
-                    onChange={(e) => handleChange('above', e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Minimum value"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Below (optional)
-                  </label>
-                  <input
-                    type="number"
-                    value={(selectedNode.data as Record<string, unknown>).below as number || ''}
-                    onChange={(e) => handleChange('below', e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Maximum value"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Attribute (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).attribute as string || ''}
-                    onChange={(e) => handleChange('attribute', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., brightness, temperature"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Template condition fields */}
-            {conditionType === 'template' && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Value Template
-                </label>
-                <textarea
-                  value={(selectedNode.data as Record<string, unknown>).value_template as string || ''}
-                  onChange={(e) => handleChange('value_template', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="{{ states('sensor.temperature') | float > 20 }}"
-                  rows={3}
-                />
-              </div>
-            )}
-
-            {/* Time condition fields */}
-            {conditionType === 'time' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    After (optional)
-                  </label>
-                  <input
-                    type="time"
-                    value={(selectedNode.data as Record<string, unknown>).after as string || ''}
-                    onChange={(e) => handleChange('after', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Before (optional)
-                  </label>
-                  <input
-                    type="time"
-                    value={(selectedNode.data as Record<string, unknown>).before as string || ''}
-                    onChange={(e) => handleChange('before', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Weekday (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).weekday as string || ''}
-                    onChange={(e) => handleChange('weekday', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="mon,tue,wed,thu,fri,sat,sun"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Zone condition fields */}
-            {conditionType === 'zone' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Entity
-                  </label>
+              {/* Common fields for entity-based conditions */}
+              {['state', 'numeric_state'].includes(conditionType) && (
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">Entity</Label>
                   <EntitySelector
-                    value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
+                    value={
+                      ((selectedNode.data as Record<string, unknown>).entity_id as string) || ''
+                    }
                     onChange={(value) => handleChange('entity_id', value)}
                     entities={effectiveEntities}
-                    placeholder="Select person or device tracker..."
+                    placeholder="Select entity..."
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Zone
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).zone as string || ''}
-                    onChange={(e) => handleChange('zone', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="zone.home"
-                  />
-                </div>
-              </>
-            )}
+              )}
 
-            {/* Device condition fields */}
-            {conditionType === 'device' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Device ID
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).device_id as string || ''}
-                    onChange={(e) => handleChange('device_id', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Device ID"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Domain
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).domain as string || ''}
-                    onChange={(e) => handleChange('domain', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., binary_sensor, sensor"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Type
-                  </label>
-                  <input
-                    type="text"
-                    value={(selectedNode.data as Record<string, unknown>).type as string || ''}
-                    onChange={(e) => handleChange('type', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., button_short_press"
-                  />
-                </div>
-              </>
-            )}
+              {/* State condition fields */}
+              {conditionType === 'state' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">State</Label>
+                    <Input
+                      type="text"
+                      value={((selectedNode.data as Record<string, unknown>).state as string) || ''}
+                      onChange={(e) => handleChange('state', e.target.value)}
+                      placeholder="e.g., on, below_horizon"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Attribute (optional)
+                    </Label>
+                    <Input
+                      type="text"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).attribute as string) || ''
+                      }
+                      onChange={(e) => handleChange('attribute', e.target.value)}
+                      placeholder="e.g., brightness, temperature"
+                    />
+                  </div>
+                </>
+              )}
 
-            {/* Common duration field */}
-            {['state', 'numeric_state', 'zone'].includes(conditionType) && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  For Duration (optional)
-                </label>
-                <input
-                  type="text"
-                  value={(selectedNode.data as Record<string, unknown>).for as string || ''}
-                  onChange={(e) => handleChange('for', e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="00:05:00 or 5 minutes"
-                />
-              </div>
-            )}
-          </>
-        );
-      })()}
+              {/* Numeric state condition fields */}
+              {conditionType === 'numeric_state' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Above (optional)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={((selectedNode.data as Record<string, unknown>).above as number) || ''}
+                      onChange={(e) =>
+                        handleChange('above', e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      placeholder="Minimum value"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Below (optional)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={((selectedNode.data as Record<string, unknown>).below as number) || ''}
+                      onChange={(e) =>
+                        handleChange('below', e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      placeholder="Maximum value"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Attribute (optional)
+                    </Label>
+                    <Input
+                      type="text"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).attribute as string) || ''
+                      }
+                      onChange={(e) => handleChange('attribute', e.target.value)}
+                      placeholder="e.g., brightness, temperature"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Template condition fields */}
+              {conditionType === 'template' && (
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">
+                    Value Template
+                  </Label>
+                  <Textarea
+                    value={
+                      ((selectedNode.data as Record<string, unknown>).value_template as string) ||
+                      ''
+                    }
+                    onChange={(e) => handleChange('value_template', e.target.value)}
+                    placeholder="{{ states('sensor.temperature') | float > 20 }}"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {/* Time condition fields */}
+              {conditionType === 'time' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      After (optional)
+                    </Label>
+                    <Input
+                      type="time"
+                      value={((selectedNode.data as Record<string, unknown>).after as string) || ''}
+                      onChange={(e) => handleChange('after', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Before (optional)
+                    </Label>
+                    <Input
+                      type="time"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).before as string) || ''
+                      }
+                      onChange={(e) => handleChange('before', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">
+                      Weekday (optional)
+                    </Label>
+                    <Input
+                      type="text"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).weekday as string) || ''
+                      }
+                      onChange={(e) => handleChange('weekday', e.target.value)}
+                      placeholder="mon,tue,wed,thu,fri,sat,sun"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Zone condition fields */}
+              {conditionType === 'zone' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Entity</Label>
+                    <EntitySelector
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).entity_id as string) || ''
+                      }
+                      onChange={(value) => handleChange('entity_id', value)}
+                      entities={effectiveEntities}
+                      placeholder="Select person or device tracker..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Zone</Label>
+                    <Input
+                      type="text"
+                      value={((selectedNode.data as Record<string, unknown>).zone as string) || ''}
+                      onChange={(e) => handleChange('zone', e.target.value)}
+                      placeholder="zone.home"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Device condition fields */}
+              {conditionType === 'device' && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Device ID</Label>
+                    <Input
+                      type="text"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).device_id as string) || ''
+                      }
+                      onChange={(e) => handleChange('device_id', e.target.value)}
+                      placeholder="Device ID"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Domain</Label>
+                    <Input
+                      type="text"
+                      value={
+                        ((selectedNode.data as Record<string, unknown>).domain as string) || ''
+                      }
+                      onChange={(e) => handleChange('domain', e.target.value)}
+                      placeholder="e.g., binary_sensor, sensor"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-medium text-muted-foreground text-xs">Type</Label>
+                    <Input
+                      type="text"
+                      value={((selectedNode.data as Record<string, unknown>).type as string) || ''}
+                      onChange={(e) => handleChange('type', e.target.value)}
+                      placeholder="e.g., button_short_press"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Common duration field */}
+              {['state', 'numeric_state', 'zone'].includes(conditionType) && (
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">
+                    For Duration (optional)
+                  </Label>
+                  <Input
+                    type="text"
+                    value={((selectedNode.data as Record<string, unknown>).for as string) || ''}
+                    onChange={(e) => handleChange('for', e.target.value)}
+                    placeholder="00:05:00 or 5 minutes"
+                  />
+                </div>
+              )}
+            </>
+          );
+        })()}
 
       {/* Action-specific fields */}
-      {selectedNode.type === 'action' && (() => {
-        const serviceName = (selectedNode.data as Record<string, unknown>).service as string || '';
-        const serviceDefinition = getServiceDefinition(serviceName);
-        const serviceFields = serviceDefinition?.fields || {};
-        const currentData = (selectedNode.data as Record<string, unknown>).data as Record<string, unknown> || {};
+      {selectedNode.type === 'action' &&
+        (() => {
+          const serviceName =
+            ((selectedNode.data as Record<string, unknown>).service as string) || '';
+          const serviceDefinition = getServiceDefinition(serviceName);
+          const serviceFields = serviceDefinition?.fields || {};
+          const currentData =
+            ((selectedNode.data as Record<string, unknown>).data as Record<string, unknown>) || {};
 
-        const handleDataFieldChange = (fieldName: string, value: unknown) => {
-          const newData = { ...currentData, [fieldName]: value === '' ? undefined : value };
-          // Clean up undefined values
-          const cleanedData = Object.fromEntries(
-            Object.entries(newData).filter(([, v]) => v !== undefined && v !== '')
-          );
-          handleChange('data', Object.keys(cleanedData).length > 0 ? cleanedData : undefined);
-        };
+          const handleDataFieldChange = (fieldName: string, value: unknown) => {
+            const newData = { ...currentData, [fieldName]: value === '' ? undefined : value };
+            // Clean up undefined values
+            const cleanedData = Object.fromEntries(
+              Object.entries(newData).filter(([, v]) => v !== undefined && v !== '')
+            );
+            handleChange('data', Object.keys(cleanedData).length > 0 ? cleanedData : undefined);
+          };
 
-        return (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Service
-              </label>
-              <select
-                value={serviceName}
-                onChange={(e) => {
-                  handleChange('service', e.target.value);
-                  // Clear data when service changes
-                  handleChange('data', undefined);
-                }}
-                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select service...</option>
-                {getAllServices().map(({ domain, service }) => (
-                  <option key={`${domain}.${service}`} value={`${domain}.${service}`}>
-                    {domain}.{service}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Target Entity */}
-            {serviceDefinition?.target && (
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Target Entity
-                </label>
-                <EntitySelector
-                  value={
-                    ((selectedNode.data as Record<string, unknown>).target as Record<string, unknown>)?.entity_id as string || ''
-                  }
-                  onChange={(value) => handleNestedChange('target', 'entity_id', value)}
-                  entities={effectiveEntities}
-                  placeholder="Select target entity..."
-                />
+          return (
+            <>
+              <div className="space-y-2">
+                <Label className="font-medium text-muted-foreground text-xs">Service</Label>
+                <Select
+                  value={serviceName}
+                  onValueChange={(value) => {
+                    handleChange('service', value);
+                    // Clear data when service changes
+                    handleChange('data', undefined);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select service..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAllServices().map(({ domain, service }) => (
+                      <SelectItem key={`${domain}.${service}`} value={`${domain}.${service}`}>
+                        {domain}.{service}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {/* Dynamic service fields */}
-            {Object.keys(serviceFields).length > 0 && (
-              <div className="border-t pt-3 mt-3">
-                <h4 className="text-xs font-semibold text-slate-500 mb-3">Service Data</h4>
-                {Object.entries(serviceFields).map(([fieldName, field]) => {
-                  const selector = field.selector || {};
-                  const selectorType = Object.keys(selector)[0];
-                  const selectorConfig = selector[selectorType] || {};
-                  const currentValue = currentData[fieldName];
+              {/* Target Entity */}
+              {serviceDefinition?.target && (
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">Target Entity</Label>
+                  <EntitySelector
+                    value={
+                      ((
+                        (selectedNode.data as Record<string, unknown>).target as Record<
+                          string,
+                          unknown
+                        >
+                      )?.entity_id as string) || ''
+                    }
+                    onChange={(value) => handleNestedChange('target', 'entity_id', value)}
+                    entities={effectiveEntities}
+                    placeholder="Select target entity..."
+                  />
+                </div>
+              )}
 
-                  // Use field.name if available, otherwise format fieldName as label
-                  const fieldLabel = field.name || fieldName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+              {/* Dynamic service fields */}
+              {Object.keys(serviceFields).length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <h4 className="mb-3 font-semibold text-muted-foreground text-xs">Service Data</h4>
+                  {Object.entries(serviceFields).map(([fieldName, field]) => {
+                    const selector = field.selector || {};
+                    const selectorType = Object.keys(selector)[0];
+                    const selectorConfig = selector[selectorType] || {};
+                    const currentValue = currentData[fieldName];
 
-                  // Render input based on selector type
-                  if (selectorType === 'number') {
-                    const config = selectorConfig as { min?: number; max?: number; unit_of_measurement?: string };
+                    // Use field.name if available, otherwise format fieldName as label
+                    const fieldLabel =
+                      field.name ||
+                      fieldName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+                    // Render input based on selector type
+                    if (selectorType === 'number') {
+                      const config = selectorConfig as {
+                        min?: number;
+                        max?: number;
+                        unit_of_measurement?: string;
+                      };
+                      return (
+                        <div key={fieldName} className="mb-3">
+                          <Label className="mb-1 font-medium text-muted-foreground text-xs">
+                            {fieldLabel}
+                            {config.unit_of_measurement && (
+                              <span className="ml-1 text-muted-foreground">
+                                ({config.unit_of_measurement})
+                              </span>
+                            )}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={(currentValue as number) ?? ''}
+                            onChange={(e) =>
+                              handleDataFieldChange(
+                                fieldName,
+                                e.target.value ? Number(e.target.value) : ''
+                              )
+                            }
+                            min={config.min}
+                            max={config.max}
+                            placeholder={field.example !== undefined ? String(field.example) : ''}
+                          />
+                          {field.description && (
+                            <p className="mt-0.5 text-muted-foreground text-xs">
+                              {field.description}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (selectorType === 'select') {
+                      const config = selectorConfig as { options?: string[] };
+                      return (
+                        <div key={fieldName} className="mb-3">
+                          <Label className="mb-1 font-medium text-muted-foreground text-xs">
+                            {fieldLabel}
+                          </Label>
+                          <Select
+                            value={(currentValue as string) ?? ''}
+                            onValueChange={(value) => handleDataFieldChange(fieldName, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="None" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {config.options?.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    }
+
+                    if (selectorType === 'boolean') {
+                      return (
+                        <div key={fieldName} className="mb-3 flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={(currentValue as boolean) ?? false}
+                            onChange={(e) => handleDataFieldChange(fieldName, e.target.checked)}
+                            className="rounded"
+                          />
+                          <Label className="font-medium text-muted-foreground text-xs">
+                            {fieldLabel}
+                          </Label>
+                        </div>
+                      );
+                    }
+
+                    // Default: text input (for text, color_rgb, etc.)
                     return (
                       <div key={fieldName} className="mb-3">
-                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                        <Label className="mb-1 font-medium text-muted-foreground text-xs">
                           {fieldLabel}
-                          {config.unit_of_measurement && (
-                            <span className="text-slate-400 ml-1">({config.unit_of_measurement})</span>
-                          )}
-                        </label>
-                        <input
-                          type="number"
-                          value={currentValue as number ?? ''}
-                          onChange={(e) => handleDataFieldChange(fieldName, e.target.value ? Number(e.target.value) : '')}
-                          min={config.min}
-                          max={config.max}
-                          className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          {field.required && <span className="ml-0.5 text-destructive">*</span>}
+                        </Label>
+                        <Input
+                          type="text"
+                          value={(currentValue as string) ?? ''}
+                          onChange={(e) => handleDataFieldChange(fieldName, e.target.value)}
                           placeholder={field.example !== undefined ? String(field.example) : ''}
                         />
                         {field.description && (
-                          <p className="text-xs text-slate-400 mt-0.5">{field.description}</p>
+                          <p className="mt-0.5 text-muted-foreground text-xs">
+                            {field.description}
+                          </p>
                         )}
                       </div>
                     );
-                  }
-
-                  if (selectorType === 'select') {
-                    const config = selectorConfig as { options?: string[] };
-                    return (
-                      <div key={fieldName} className="mb-3">
-                        <label className="block text-xs font-medium text-slate-600 mb-1">
-                          {fieldLabel}
-                        </label>
-                        <select
-                          value={currentValue as string ?? ''}
-                          onChange={(e) => handleDataFieldChange(fieldName, e.target.value)}
-                          className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">None</option>
-                          {config.options?.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </div>
-                    );
-                  }
-
-                  if (selectorType === 'boolean') {
-                    return (
-                      <div key={fieldName} className="mb-3 flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={currentValue as boolean ?? false}
-                          onChange={(e) => handleDataFieldChange(fieldName, e.target.checked)}
-                          className="rounded"
-                        />
-                        <label className="text-xs font-medium text-slate-600">
-                          {fieldLabel}
-                        </label>
-                      </div>
-                    );
-                  }
-
-                  // Default: text input (for text, color_rgb, etc.)
-                  return (
-                    <div key={fieldName} className="mb-3">
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        {fieldLabel}
-                        {field.required && <span className="text-red-500 ml-0.5">*</span>}
-                      </label>
-                      <input
-                        type="text"
-                        value={currentValue as string ?? ''}
-                        onChange={(e) => handleDataFieldChange(fieldName, e.target.value)}
-                        className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={field.example !== undefined ? String(field.example) : ''}
-                      />
-                      {field.description && (
-                        <p className="text-xs text-slate-400 mt-0.5">{field.description}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        );
-      })()}
+                  })}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
       {/* Delay-specific fields */}
       {selectedNode.type === 'delay' && (
-        <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1">
-            Delay (HH:MM:SS)
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label className="font-medium text-muted-foreground text-xs">Delay (HH:MM:SS)</Label>
+          <Input
             type="text"
-            value={(selectedNode.data as Record<string, unknown>).delay as string || '00:00:05'}
+            value={((selectedNode.data as Record<string, unknown>).delay as string) || '00:00:05'}
             onChange={(e) => handleChange('delay', e.target.value)}
-            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="00:00:05"
           />
         </div>
@@ -726,36 +771,31 @@ export function PropertyPanel() {
       {/* Wait-specific fields */}
       {selectedNode.type === 'wait' && (
         <>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Wait Template
-            </label>
-            <textarea
-              value={(selectedNode.data as Record<string, unknown>).wait_template as string || ''}
+          <div className="space-y-2">
+            <Label className="font-medium text-muted-foreground text-xs">Wait Template</Label>
+            <Textarea
+              value={((selectedNode.data as Record<string, unknown>).wait_template as string) || ''}
               onChange={(e) => handleChange('wait_template', e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              className="font-mono"
               rows={3}
               placeholder="{{ is_state('sensor.x', 'on') }}"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Timeout
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label className="font-medium text-muted-foreground text-xs">Timeout</Label>
+            <Input
               type="text"
-              value={(selectedNode.data as Record<string, unknown>).timeout as string || '00:01:00'}
+              value={
+                ((selectedNode.data as Record<string, unknown>).timeout as string) || '00:01:00'
+              }
               onChange={(e) => handleChange('timeout', e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="00:01:00"
             />
           </div>
         </>
       )}
 
-      <div className="pt-2 text-xs text-slate-400">
-        Node ID: {selectedNode.id}
-      </div>
+      <div className="pt-2 text-muted-foreground text-xs">Node ID: {selectedNode.id}</div>
     </div>
   );
 }

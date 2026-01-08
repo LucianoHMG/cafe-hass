@@ -1,16 +1,16 @@
-import { create } from "zustand";
+import type { FlowEdge, FlowGraph, FlowNode } from '@hflow/shared';
 import {
-  Node,
-  Edge,
-  Connection,
   addEdge,
-  applyNodeChanges,
   applyEdgeChanges,
-  NodeChange,
-  EdgeChange,
-} from "@xyflow/react";
-import type { FlowGraph, FlowNode, FlowEdge } from "@hflow/shared";
-import { generateUUID } from "@/lib/utils";
+  applyNodeChanges,
+  type Connection,
+  type Edge,
+  type EdgeChange,
+  type Node,
+  type NodeChange,
+} from '@xyflow/react';
+import { create } from 'zustand';
+import { generateUUID } from '@/lib/utils';
 
 /**
  * Node data types for React Flow
@@ -147,8 +147,8 @@ interface FlowState {
 
 const initialState = {
   flowId: generateUUID(),
-  flowName: "Untitled Automation",
-  flowDescription: "",
+  flowName: 'Untitled Automation',
+  flowDescription: '',
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -200,11 +200,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   removeNode: (nodeId) =>
     set((state) => ({
       nodes: state.nodes.filter((n) => n.id !== nodeId),
-      edges: state.edges.filter(
-        (e) => e.source !== nodeId && e.target !== nodeId
-      ),
-      selectedNodeId:
-        state.selectedNodeId === nodeId ? null : state.selectedNodeId,
+      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
     })),
 
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
@@ -212,8 +209,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   setFlowName: (name) => set({ flowName: name }),
   setFlowDescription: (description) => set({ flowDescription: description }),
 
-  startSimulation: () =>
-    set({ isSimulating: true, executionPath: [], activeNodeId: null }),
+  startSimulation: () => set({ isSimulating: true, executionPath: [], activeNodeId: null }),
   stopSimulation: () => set({ isSimulating: false, activeNodeId: null }),
   setActiveNode: (nodeId) => set({ activeNodeId: nodeId }),
   addToExecutionPath: (nodeId) =>
@@ -230,9 +226,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       description: state.flowDescription || undefined,
       nodes: state.nodes.map((n) => ({
         id: n.id,
-        type: n.type as FlowNode["type"],
+        type: n.type as FlowNode['type'],
         position: n.position,
-        data: n.data as FlowNode["data"],
+        data: n.data as FlowNode['data'],
       })) as FlowNode[],
       edges: state.edges.map((e) => ({
         id: e.id,
@@ -240,10 +236,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         target: e.target,
         sourceHandle: e.sourceHandle,
         targetHandle: e.targetHandle,
-        label: typeof e.label === "string" ? e.label : undefined,
+        label: typeof e.label === 'string' ? e.label : undefined,
       })) as FlowEdge[],
       metadata: {
-        mode: "single",
+        mode: 'single',
         initial_state: true,
       },
       version: 1,
@@ -254,7 +250,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       flowId: graph.id,
       flowName: graph.name,
-      flowDescription: graph.description || "",
+      flowDescription: graph.description || '',
       nodes: graph.nodes.map((n) => ({
         id: n.id,
         type: n.type,

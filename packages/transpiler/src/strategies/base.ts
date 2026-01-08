@@ -62,9 +62,7 @@ export abstract class BaseStrategy implements TranspilerStrategy {
    */
   protected findEntryNodes(flow: FlowGraph): string[] {
     const targetNodes = new Set(flow.edges.map((e) => e.target));
-    return flow.nodes
-      .filter((n) => !targetNodes.has(n.id))
-      .map((n) => n.id);
+    return flow.nodes.filter((n) => !targetNodes.has(n.id)).map((n) => n.id);
   }
 
   /**
@@ -91,7 +89,10 @@ export abstract class BaseStrategy implements TranspilerStrategy {
   /**
    * Generate a readable alias for a node
    */
-  protected generateAlias(node: { type: string; data: { alias?: string; service?: string; platform?: string; condition_type?: string } }): string {
+  protected generateAlias(node: {
+    type: string;
+    data: { alias?: string; service?: string; platform?: string; condition_type?: string };
+  }): string {
     if (node.data.alias) {
       return node.data.alias;
     }

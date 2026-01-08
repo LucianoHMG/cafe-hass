@@ -16,8 +16,8 @@ const testGraph = {
       data: {
         platform: 'state',
         entity_id: 'light.living_room',
-        to: 'on'
-      }
+        to: 'on',
+      },
     },
     {
       id: 'action-1',
@@ -26,22 +26,22 @@ const testGraph = {
       data: {
         service: 'notify.mobile_app',
         data: {
-          message: 'Light turned on!'
-        }
-      }
-    }
+          message: 'Light turned on!',
+        },
+      },
+    },
   ],
   edges: [
     {
       id: 'e1',
       source: 'trigger-1',
-      target: 'action-1'
-    }
+      target: 'action-1',
+    },
   ],
   metadata: {
-    mode: 'single'
+    mode: 'single',
   },
-  version: 1
+  version: 1,
 };
 
 console.log('=== Testing Export (toYaml) ===\n');
@@ -65,7 +65,7 @@ try {
 
     if (parseResult.warnings.length > 0) {
       console.log('\n⚠️  Warnings:');
-      parseResult.warnings.forEach(w => console.log(`   - ${w}`));
+      parseResult.warnings.forEach((w) => console.log(`   - ${w}`));
     }
 
     // Check if positions were preserved

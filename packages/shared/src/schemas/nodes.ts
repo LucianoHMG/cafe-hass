@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { PositionSchema } from './base';
 import {
-  TriggerPlatformSchema,
   ConditionTypeSchema,
   OptionalTargetSchema,
   ServiceDataSchema,
   ServiceDataTemplateSchema,
+  TriggerPlatformSchema,
 } from './ha-entities';
 
 // ============================================
@@ -23,11 +23,16 @@ export const TriggerDataSchema = z.object({
   entity_id: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
-  for: z.union([z.string(), z.object({
-    hours: z.number().optional(),
-    minutes: z.number().optional(),
-    seconds: z.number().optional(),
-  })]).optional(),
+  for: z
+    .union([
+      z.string(),
+      z.object({
+        hours: z.number().optional(),
+        minutes: z.number().optional(),
+        seconds: z.number().optional(),
+      }),
+    ])
+    .optional(),
   // Time trigger
   at: z.string().optional(),
   // Time pattern trigger
@@ -76,11 +81,16 @@ const BaseConditionDataSchema = z.object({
   condition_type: ConditionTypeSchema,
   // Common fields
   attribute: z.string().optional(),
-  for: z.union([z.string(), z.object({
-    hours: z.number().optional(),
-    minutes: z.number().optional(),
-    seconds: z.number().optional(),
-  })]).optional(),
+  for: z
+    .union([
+      z.string(),
+      z.object({
+        hours: z.number().optional(),
+        minutes: z.number().optional(),
+        seconds: z.number().optional(),
+      }),
+    ])
+    .optional(),
   // State condition
   entity_id: z.string().optional(),
   state: z.union([z.string(), z.array(z.string())]).optional(),

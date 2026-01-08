@@ -1,16 +1,16 @@
-import { load as yamlLoad } from 'js-yaml';
-import { v4 as uuidv4 } from 'uuid';
 import type {
+  ActionNode,
+  ConditionNode,
+  DelayNode,
+  FlowEdge,
   FlowGraph,
   FlowNode,
-  FlowEdge,
   TriggerNode,
-  ConditionNode,
-  ActionNode,
-  DelayNode,
   WaitNode,
 } from '@hflow/shared';
 import { FlowGraphSchema, validateGraphStructure } from '@hflow/shared';
+import { load as yamlLoad } from 'js-yaml';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Metadata structure stored in YAML variables._flow_automator
@@ -104,7 +104,7 @@ export class YamlParser {
       if (!validation.success) {
         return {
           success: false,
-          errors: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+          errors: validation.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
           warnings,
           hadMetadata,
         };
@@ -143,9 +143,10 @@ export class YamlParser {
    */
   private extractMetadata(parsed: any): FlowAutomatorMetadata | null {
     try {
-      const variables = parsed.variables || parsed.script?.[Object.keys(parsed.script)[0]]?.variables;
+      const variables =
+        parsed.variables || parsed.script?.[Object.keys(parsed.script)[0]]?.variables;
 
-      if (variables && variables._flow_automator) {
+      if (variables?._flow_automator) {
         const metadata = variables._flow_automator;
         // Validate metadata structure
         if (
@@ -227,7 +228,7 @@ export class YamlParser {
 
       firstActionNodeIds = conditionResults.outputNodeIds;
     } else {
-      firstActionNodeIds = triggerNodes.map(t => t.id);
+      firstActionNodeIds = triggerNodes.map((t) => t.id);
     }
 
     // Parse actions (support both 'action' and 'actions')
@@ -237,7 +238,13 @@ export class YamlParser {
       return { nodes, edges };
     }
     const actions = Array.isArray(actionData) ? actionData : [actionData];
-    const actionResults = this.parseActions(actions, warnings, firstActionNodeIds, getNextNodeId, conditionNodeIds);
+    const actionResults = this.parseActions(
+      actions,
+      warnings,
+      firstActionNodeIds,
+      getNextNodeId,
+      conditionNodeIds
+    );
     nodes.push(...actionResults.nodes);
     edges.push(...actionResults.edges);
 
@@ -253,7 +260,7 @@ export class YamlParser {
     getNextNodeId: (type: string) => string
   ): FlowNode[] {
     return triggers
-      .filter(t => t && typeof t === 'object')
+      .filter((t) => t && typeof t === 'object')
       .map((trigger, index) => {
         const nodeId = getNextNodeId('trigger');
 
@@ -307,7 +314,7 @@ export class YamlParser {
     const outputNodeIds: string[] = [];
 
     conditions
-      .filter(c => c && typeof c === 'object')
+      .filter((c) => c && typeof c === 'object')
       .forEach((condition, index) => {
         const nodeId = getNextNodeId('condition');
 
@@ -359,7 +366,7 @@ export class YamlParser {
     let currentNodeIds = previousNodeIds;
 
     actions
-      .filter(a => a && typeof a === 'object')
+      .filter((a) => a && typeof a === 'object')
       .forEach((action, index) => {
         // Handle different action types
         if (action.delay) {
@@ -407,7 +414,13 @@ export class YamlParser {
           currentNodeIds = [nodeId];
         } else if (action.choose) {
           // Handle condition branching (choose blocks)
-          const chooseResult = this.parseChooseBlock(action, warnings, currentNodeIds, getNextNodeId, conditionNodeIds);
+          const chooseResult = this.parseChooseBlock(
+            action,
+            warnings,
+            currentNodeIds,
+            getNextNodeId,
+            conditionNodeIds
+          );
           nodes.push(...chooseResult.nodes);
           edges.push(...chooseResult.edges);
           currentNodeIds = chooseResult.outputNodeIds;
@@ -479,7 +492,9 @@ export class YamlParser {
     const outputNodeIds: string[] = [];
     const localConditionIds = new Set(conditionNodeIds);
 
-    const choices = Array.isArray(chooseAction.choose) ? chooseAction.choose : [chooseAction.choose];
+    const choices = Array.isArray(chooseAction.choose)
+      ? chooseAction.choose
+      : [chooseAction.choose];
 
     choices.forEach((choice: any) => {
       if (choice.conditions) {
@@ -507,14 +522,22 @@ export class YamlParser {
         // Parse sequence for this choice
         if (choice.sequence) {
           const sequence = Array.isArray(choice.sequence) ? choice.sequence : [choice.sequence];
-          const sequenceResult = this.parseActions(sequence, warnings, [conditionId], getNextNodeId, localConditionIds);
+          const sequenceResult = this.parseActions(
+            sequence,
+            warnings,
+            [conditionId],
+            getNextNodeId,
+            localConditionIds
+          );
           nodes.push(...sequenceResult.nodes);
           edges.push(...sequenceResult.edges);
 
           // Connect condition node to first action in sequence via 'true' handle
           if (sequenceResult.nodes.length > 0) {
             const firstActionId = sequenceResult.nodes[0].id;
-            const trueEdge = edges.find(e => e.source === conditionId && e.target === firstActionId);
+            const trueEdge = edges.find(
+              (e) => e.source === conditionId && e.target === firstActionId
+            );
             if (trueEdge) {
               trueEdge.sourceHandle = 'true';
             }
@@ -527,8 +550,16 @@ export class YamlParser {
 
     // Handle default sequence
     if (chooseAction.default) {
-      const defaultSequence = Array.isArray(chooseAction.default) ? chooseAction.default : [chooseAction.default];
-      const defaultResult = this.parseActions(defaultSequence, warnings, previousNodeIds, getNextNodeId, conditionNodeIds);
+      const defaultSequence = Array.isArray(chooseAction.default)
+        ? chooseAction.default
+        : [chooseAction.default];
+      const defaultResult = this.parseActions(
+        defaultSequence,
+        warnings,
+        previousNodeIds,
+        getNextNodeId,
+        conditionNodeIds
+      );
       nodes.push(...defaultResult.nodes);
       edges.push(...defaultResult.edges);
     }
@@ -556,7 +587,7 @@ export class YamlParser {
    * Apply positions from metadata
    */
   private applyMetadataPositions(nodes: FlowNode[], metadata: FlowAutomatorMetadata): FlowNode[] {
-    return nodes.map(node => ({
+    return nodes.map((node) => ({
       ...node,
       position: metadata.nodes[node.id] || node.position,
     }));

@@ -1,7 +1,8 @@
-import { useCallback, type DragEvent } from 'react';
-import { Zap, GitBranch, Play, Clock, Hourglass } from 'lucide-react';
-import { useFlowStore } from '@/store/flow-store';
+import { Clock, GitBranch, Hourglass, Play, Zap } from 'lucide-react';
+import { type DragEvent, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useFlowStore } from '@/store/flow-store';
 
 export interface NodeTypeConfig {
   type: string;
@@ -82,37 +83,38 @@ export function NodePalette() {
     [addNode, nodes.length]
   );
 
-  const onDragStart = useCallback(
-    (event: DragEvent<HTMLButtonElement>, config: NodeTypeConfig) => {
-      // Store the node type data in the drag event
-      event.dataTransfer.setData('application/reactflow', JSON.stringify({
+  const onDragStart = useCallback((event: DragEvent<HTMLButtonElement>, config: NodeTypeConfig) => {
+    // Store the node type data in the drag event
+    event.dataTransfer.setData(
+      'application/reactflow',
+      JSON.stringify({
         type: config.type,
         defaultData: config.defaultData,
-      }));
-      event.dataTransfer.effectAllowed = 'move';
-    },
-    []
-  );
+      })
+    );
+    event.dataTransfer.effectAllowed = 'move';
+  }, []);
 
   return (
-    <div className="p-4 space-y-2">
-      <h3 className="font-semibold text-sm text-slate-600 mb-3">Add Node</h3>
+    <div className="space-y-2 p-4">
+      <h3 className="mb-3 font-semibold text-muted-foreground text-sm">Add Node</h3>
       <div className="space-y-2">
         {nodeTypes.map((config) => (
-          <button
+          <Button
             key={config.type}
+            variant="outline"
             onClick={() => handleAddNode(config)}
             onDragStart={(e) => onDragStart(e, config)}
             draggable
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-lg border-2',
-              'transition-colors cursor-grab active:cursor-grabbing',
+              'h-auto w-full justify-start gap-3 py-3',
+              'cursor-grab transition-colors active:cursor-grabbing',
               config.color
             )}
           >
-            <config.icon className="w-4 h-4" />
+            <config.icon className="h-4 w-4" />
             <span className="font-medium text-sm">{config.label}</span>
-          </button>
+          </Button>
         ))}
       </div>
     </div>

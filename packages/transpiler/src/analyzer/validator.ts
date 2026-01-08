@@ -1,4 +1,4 @@
-import { FlowGraphSchema, validateGraphStructure, type FlowGraph } from '@hflow/shared';
+import { type FlowGraph, FlowGraphSchema, validateGraphStructure } from '@hflow/shared';
 import { ZodError } from 'zod';
 
 /**

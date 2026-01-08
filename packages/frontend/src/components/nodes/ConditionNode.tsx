@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { GitBranch } from 'lucide-react';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import type { ConditionNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -33,7 +33,7 @@ export const ConditionNode = memo(function ConditionNode({
   return (
     <div
       className={cn(
-        'px-4 py-3 rounded-lg border-2 bg-blue-50 border-blue-400 min-w-[180px] relative',
+        'relative min-w-[180px] rounded-lg border-2 border-blue-400 bg-blue-50 px-4 py-3',
         'transition-all duration-200',
         selected && 'ring-2 ring-blue-500 ring-offset-2',
         isActive && 'node-active ring-4 ring-green-500'
@@ -45,22 +45,20 @@ export const ConditionNode = memo(function ConditionNode({
         className="!w-3 !h-3 !bg-blue-500 !border-blue-700"
       />
 
-      <div className="flex items-center gap-2 mb-1">
-        <div className="p-1 rounded bg-blue-200">
-          <GitBranch className="w-4 h-4 text-blue-700" />
+      <div className="mb-1 flex items-center gap-2">
+        <div className="rounded bg-blue-200 p-1">
+          <GitBranch className="h-4 w-4 text-blue-700" />
         </div>
         <span className="font-semibold text-blue-900 text-sm">
           {data.alias || conditionLabels[data.condition_type] || 'Condition'}
         </span>
       </div>
 
-      <div className="text-xs text-blue-700 space-y-0.5">
+      <div className="space-y-0.5 text-blue-700 text-xs">
         <div className="font-medium">
           {conditionLabels[data.condition_type] || data.condition_type}
         </div>
-        {data.entity_id && (
-          <div className="truncate opacity-75">{data.entity_id}</div>
-        )}
+        {data.entity_id && <div className="truncate opacity-75">{data.entity_id}</div>}
         {data.state && <div className="opacity-75">= {data.state}</div>}
         {data.above !== undefined && <div className="opacity-75">&gt; {data.above}</div>}
         {data.below !== undefined && <div className="opacity-75">&lt; {data.below}</div>}
@@ -70,16 +68,19 @@ export const ConditionNode = memo(function ConditionNode({
         {data.attribute && <div className="opacity-75">attr: {data.attribute}</div>}
         {data.for && (
           <div className="opacity-75">
-            for: {typeof data.for === 'string' ? data.for : `${data.for.hours || 0}h ${data.for.minutes || 0}m ${data.for.seconds || 0}s`}
+            for:{' '}
+            {typeof data.for === 'string'
+              ? data.for
+              : `${data.for.hours || 0}h ${data.for.minutes || 0}m ${data.for.seconds || 0}s`}
           </div>
         )}
         {data.template && (
-          <div className="truncate opacity-75 font-mono text-[10px]">
+          <div className="truncate font-mono text-[10px] opacity-75">
             {data.template.slice(0, 30)}...
           </div>
         )}
         {data.value_template && (
-          <div className="truncate opacity-75 font-mono text-[10px]">
+          <div className="truncate font-mono text-[10px] opacity-75">
             {data.value_template.slice(0, 30)}...
           </div>
         )}
@@ -100,12 +101,12 @@ export const ConditionNode = memo(function ConditionNode({
         style={{ top: '70%' }}
         className="!w-3 !h-3 !bg-red-500 !border-red-700"
       />
-      
+
       {/* Labels for handles */}
-      <div className="absolute right-[-35px] top-[30%] transform -translate-y-1/2 text-[10px] font-medium text-green-700 bg-white px-1 py-0.5 rounded border border-green-200 shadow-sm">
+      <div className="absolute top-[30%] right-[-35px] -translate-y-1/2 transform rounded border border-green-200 bg-white px-1 py-0.5 font-medium text-[10px] text-green-700 shadow-sm">
         Yes
       </div>
-      <div className="absolute right-[-30px] top-[70%] transform -translate-y-1/2 text-[10px] font-medium text-red-700 bg-white px-1 py-0.5 rounded border border-red-200 shadow-sm">
+      <div className="absolute top-[70%] right-[-30px] -translate-y-1/2 transform rounded border border-red-200 bg-white px-1 py-0.5 font-medium text-[10px] text-red-700 shadow-sm">
         No
       </div>
     </div>

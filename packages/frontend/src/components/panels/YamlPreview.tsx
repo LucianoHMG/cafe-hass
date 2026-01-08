@@ -1,13 +1,22 @@
-import { useMemo, useState } from 'react';
-import { Copy, Check, AlertCircle } from 'lucide-react';
 import { FlowTranspiler } from '@hflow/transpiler';
-import { useFlowStore } from '@/store/flow-store';
+import { AlertCircle, Check, Copy } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useFlowStore } from '@/store/flow-store';
 
 export function YamlPreview() {
   const toFlowGraph = useFlowStore((s) => s.toFlowGraph);
   const nodes = useFlowStore((s) => s.nodes);
-  const edges = useFlowStore((s) => s.edges);
   const [copied, setCopied] = useState(false);
   const [forceStrategy, setForceStrategy] = useState<'auto' | 'native' | 'state-machine'>('auto');
 
@@ -52,7 +61,7 @@ export function YamlPreview() {
         strategy: null,
       };
     }
-  }, [nodes, edges, toFlowGraph, forceStrategy]);
+  }, [nodes, toFlowGraph, forceStrategy]);
 
   const handleCopy = async () => {
     try {
@@ -65,65 +74,71 @@ export function YamlPreview() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-3 border-b">
-        <h3 className="font-semibold text-sm text-slate-700">YAML Output</h3>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b p-3">
+        <h3 className="font-semibold text-foreground text-sm">YAML Output</h3>
         <div className="flex items-center gap-2">
-          <select
+          <Select
             value={forceStrategy}
-            onChange={(e) => setForceStrategy(e.target.value as typeof forceStrategy)}
-            className="text-xs px-2 py-1 border rounded"
+            onValueChange={(value) => setForceStrategy(value as typeof forceStrategy)}
           >
-            <option value="auto">Auto</option>
-            <option value="native">Native</option>
-            <option value="state-machine">State Machine</option>
-          </select>
-          <button
+            <SelectTrigger className="h-7 w-[120px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="native">Native</SelectItem>
+              <SelectItem value="state-machine">State Machine</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleCopy}
             disabled={!yaml || errors.length > 0}
             className={cn(
-              'p-1.5 rounded transition-colors',
-              copied
-                ? 'bg-green-100 text-green-600'
-                : 'hover:bg-slate-100 text-slate-600'
+              'h-7 w-7 p-0',
+              copied ? 'bg-green-100 text-green-600 hover:bg-green-100' : 'text-muted-foreground'
             )}
-            title="Copy to clipboard"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          </button>
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
       {strategy && (
-        <div className="px-3 py-1.5 bg-slate-50 border-b text-xs text-slate-500">
-          Strategy: <span className="font-medium">{strategy}</span>
+        <div className="flex items-center gap-2 border-b bg-muted/50 px-3 py-1.5">
+          <span className="text-muted-foreground text-xs">Strategy:</span>
+          <Badge variant="secondary" className="text-xs">
+            {strategy}
+          </Badge>
         </div>
       )}
 
       {warnings.length > 0 && (
-        <div className="px-3 py-2 bg-amber-50 border-b">
+        <div className="space-y-1 px-3 py-2">
           {warnings.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-amber-700">
-              <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              <span>{w}</span>
-            </div>
+            <Alert key={`warning-${i}-${w.slice(0, 20)}`}>
+              <AlertCircle className="h-3 w-3" />
+              <AlertDescription className="text-xs">{w}</AlertDescription>
+            </Alert>
           ))}
         </div>
       )}
 
       {errors.length > 0 && (
-        <div className="px-3 py-2 bg-red-50 border-b">
+        <div className="space-y-1 px-3 py-2">
           {errors.map((e, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-red-700">
-              <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              <span>{e}</span>
-            </div>
+            <Alert key={`error-${i}-${e.slice(0, 20)}`} variant="destructive">
+              <AlertCircle className="h-3 w-3" />
+              <AlertDescription className="text-xs">{e}</AlertDescription>
+            </Alert>
           ))}
         </div>
       )}
 
       <div className="flex-1 overflow-auto">
-        <pre className="p-3 text-xs font-mono text-slate-700 whitespace-pre-wrap">
+        <pre className="whitespace-pre-wrap p-3 font-mono text-foreground text-xs">
           {yaml || (errors.length > 0 ? '# Fix errors above to generate YAML' : '')}
         </pre>
       </div>

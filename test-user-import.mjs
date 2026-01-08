@@ -35,12 +35,14 @@ try {
 
     console.log('\nEdges:');
     result.graph.edges.forEach((edge, i) => {
-      console.log(`   ${i + 1}. ${edge.source} -> ${edge.target}${edge.sourceHandle ? ` (${edge.sourceHandle})` : ''}`);
+      console.log(
+        `   ${i + 1}. ${edge.source} -> ${edge.target}${edge.sourceHandle ? ` (${edge.sourceHandle})` : ''}`
+      );
     });
 
     if (result.warnings.length > 0) {
       console.log('\n⚠️  Warnings:');
-      result.warnings.forEach(w => console.log(`   - ${w}`));
+      result.warnings.forEach((w) => console.log(`   - ${w}`));
     }
   } else {
     console.log('❌ Import failed!');

@@ -1,5 +1,5 @@
+import type { FlowEdge, FlowNode } from '@hflow/shared';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import type { FlowNode, FlowEdge } from '@hflow/shared';
 
 const elk = new ELK();
 
@@ -13,13 +13,13 @@ export async function applyHeuristicLayout(
 ): Promise<FlowNode[]> {
   try {
     // Convert to ELK graph format
-    const elkNodes = nodes.map(node => ({
+    const elkNodes = nodes.map((node) => ({
       id: node.id,
       width: getNodeWidth(node.type),
       height: getNodeHeight(node.type),
     }));
 
-    const elkEdges = edges.map(edge => ({
+    const elkEdges = edges.map((edge) => ({
       id: edge.id,
       sources: [edge.source],
       targets: [edge.target],
@@ -43,8 +43,8 @@ export async function applyHeuristicLayout(
     const layout = await elk.layout(graph);
 
     // Apply computed positions back to nodes
-    return nodes.map(node => {
-      const elkNode = layout.children?.find(n => n.id === node.id);
+    return nodes.map((node) => {
+      const elkNode = layout.children?.find((n) => n.id === node.id);
       if (elkNode && elkNode.x !== undefined && elkNode.y !== undefined) {
         return {
           ...node,
@@ -56,7 +56,7 @@ export async function applyHeuristicLayout(
       }
       return node;
     });
-  } catch (error) {
+  } catch (_error) {
     // Fallback to simple grid layout if ELK fails
     return applyFallbackLayout(nodes);
   }
@@ -66,10 +66,7 @@ export async function applyHeuristicLayout(
  * Synchronous version that returns nodes with placeholder positions
  * The actual layout will be computed asynchronously
  */
-export function applyHeuristicLayoutSync(
-  nodes: FlowNode[],
-  _edges: FlowEdge[]
-): FlowNode[] {
+export function applyHeuristicLayoutSync(nodes: FlowNode[], _edges: FlowEdge[]): FlowNode[] {
   // Simple grid layout as fallback
   return applyFallbackLayout(nodes);
 }
@@ -78,8 +75,8 @@ export function applyHeuristicLayoutSync(
  * Simple fallback layout when ELK is not available or fails
  */
 function applyFallbackLayout(nodes: FlowNode[]): FlowNode[] {
-  let x = 100;
-  let y = 100;
+  const x = 100;
+  const y = 100;
   const columnWidth = 300;
   const rowHeight = 150;
   const nodesPerRow = 3;

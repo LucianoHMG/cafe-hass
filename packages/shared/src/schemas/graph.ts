@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AutomationModeSchema, MaxExceededSchema } from './base';
-import { NodeSchema } from './nodes';
 import { EdgeSchema } from './edges';
+import { NodeSchema } from './nodes';
 
 /**
  * Metadata for the flow graph
@@ -30,9 +30,11 @@ export const FlowMetadataSchema = z.object({
   /**
    * Trace configuration
    */
-  trace: z.object({
-    stored_traces: z.number().optional(),
-  }).optional(),
+  trace: z
+    .object({
+      stored_traces: z.number().optional(),
+    })
+    .optional(),
 });
 export type FlowMetadata = z.infer<typeof FlowMetadataSchema>;
 

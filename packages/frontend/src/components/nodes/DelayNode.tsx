@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, Position } from '@xyflow/react';
 import { Clock } from 'lucide-react';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import type { DelayNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
@@ -9,11 +9,7 @@ interface DelayNodeProps extends NodeProps {
   data: DelayNodeData;
 }
 
-export const DelayNode = memo(function DelayNode({
-  id,
-  data,
-  selected,
-}: DelayNodeProps) {
+export const DelayNode = memo(function DelayNode({ id, data, selected }: DelayNodeProps) {
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const isActive = activeNodeId === id;
 
@@ -32,7 +28,7 @@ export const DelayNode = memo(function DelayNode({
   return (
     <div
       className={cn(
-        'px-4 py-3 rounded-lg border-2 bg-purple-50 border-purple-400 min-w-[140px]',
+        'min-w-[140px] rounded-lg border-2 border-purple-400 bg-purple-50 px-4 py-3',
         'transition-all duration-200',
         selected && 'ring-2 ring-purple-500 ring-offset-2',
         isActive && 'node-active ring-4 ring-green-500'
@@ -44,16 +40,14 @@ export const DelayNode = memo(function DelayNode({
         className="!w-3 !h-3 !bg-purple-500 !border-purple-700"
       />
 
-      <div className="flex items-center gap-2 mb-1">
-        <div className="p-1 rounded bg-purple-200">
-          <Clock className="w-4 h-4 text-purple-700" />
+      <div className="mb-1 flex items-center gap-2">
+        <div className="rounded bg-purple-200 p-1">
+          <Clock className="h-4 w-4 text-purple-700" />
         </div>
-        <span className="font-semibold text-purple-900 text-sm">
-          {data.alias || 'Delay'}
-        </span>
+        <span className="font-semibold text-purple-900 text-sm">{data.alias || 'Delay'}</span>
       </div>
 
-      <div className="text-xs text-purple-700">
+      <div className="text-purple-700 text-xs">
         <div className="font-mono">{delayDisplay}</div>
       </div>
 

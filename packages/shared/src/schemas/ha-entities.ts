@@ -40,24 +40,27 @@ export type ConditionType = z.infer<typeof ConditionTypeSchema>;
 /**
  * Target specification for service calls
  */
-export const TargetSchema = z.object({
-  entity_id: z.union([EntityIdSchema, z.array(EntityIdSchema)]).optional(),
-  area_id: z.union([z.string(), z.array(z.string())]).optional(),
-  device_id: z.union([z.string(), z.array(z.string())]).optional(),
-}).refine(
-  (data) => data.entity_id || data.area_id || data.device_id,
-  { message: 'At least one target (entity_id, area_id, or device_id) must be specified' }
-);
+export const TargetSchema = z
+  .object({
+    entity_id: z.union([EntityIdSchema, z.array(EntityIdSchema)]).optional(),
+    area_id: z.union([z.string(), z.array(z.string())]).optional(),
+    device_id: z.union([z.string(), z.array(z.string())]).optional(),
+  })
+  .refine((data) => data.entity_id || data.area_id || data.device_id, {
+    message: 'At least one target (entity_id, area_id, or device_id) must be specified',
+  });
 export type Target = z.infer<typeof TargetSchema>;
 
 /**
  * Optional target (for service calls that don't require a target)
  */
-export const OptionalTargetSchema = z.object({
-  entity_id: z.union([z.string(), z.array(z.string())]).optional(),
-  area_id: z.union([z.string(), z.array(z.string())]).optional(),
-  device_id: z.union([z.string(), z.array(z.string())]).optional(),
-}).optional();
+export const OptionalTargetSchema = z
+  .object({
+    entity_id: z.union([z.string(), z.array(z.string())]).optional(),
+    area_id: z.union([z.string(), z.array(z.string())]).optional(),
+    device_id: z.union([z.string(), z.array(z.string())]).optional(),
+  })
+  .optional();
 
 /**
  * Service call data - arbitrary key-value pairs

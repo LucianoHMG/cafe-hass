@@ -27,9 +27,7 @@
       }
     }
   ],
-  "edges": [
-    { "id": "e1", "source": "trigger_1", "target": "action_1" }
-  ],
+  "edges": [{ "id": "e1", "source": "trigger_1", "target": "action_1" }],
   "metadata": {
     "mode": "single"
   }

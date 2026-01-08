@@ -1,25 +1,18 @@
-import { useCallback, useMemo, useRef, type DragEvent } from 'react';
 import {
-  ReactFlow,
   Background,
-  Controls,
-  MiniMap,
   BackgroundVariant,
-  useReactFlow,
+  Controls,
+  MarkerType,
+  MiniMap,
   type NodeTypes,
   type OnSelectionChangeParams,
   Panel,
-  MarkerType,
+  ReactFlow,
+  useReactFlow,
 } from '@xyflow/react';
-
+import { type DragEvent, useCallback, useMemo, useRef } from 'react';
+import { ActionNode, ConditionNode, DelayNode, TriggerNode, WaitNode } from '@/components/nodes';
 import { useFlowStore } from '@/store/flow-store';
-import {
-  TriggerNode,
-  ConditionNode,
-  ActionNode,
-  DelayNode,
-  WaitNode,
-} from '@/components/nodes';
 
 const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
@@ -81,7 +74,7 @@ export function FlowCanvas() {
         // Center the node at the cursor position by offsetting by half node dimensions
         const nodeWidth = 180; // Approximate node width
         const nodeHeight = 80; // Approximate node height
-        
+
         const position = {
           x: dropPosition.x - nodeWidth / 2,
           y: dropPosition.y - nodeHeight / 2,
@@ -118,8 +111,7 @@ export function FlowCanvas() {
 
       // Check if this edge is connected to the selected node
       const isConnectedToSelected =
-        selectedNodeId &&
-        (edge.source === selectedNodeId || edge.target === selectedNodeId);
+        selectedNodeId && (edge.source === selectedNodeId || edge.target === selectedNodeId);
 
       // Determine edge styling based on state
       let edgeStyle = { strokeWidth: 2, stroke: '#64748b' };
@@ -145,7 +137,7 @@ export function FlowCanvas() {
   }, [edges, isSimulating, executionPath, selectedNodeId]);
 
   return (
-    <div className="w-full h-full" ref={reactFlowWrapper}>
+    <div className="h-full w-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={styledEdges}
@@ -171,12 +163,7 @@ export function FlowCanvas() {
         className="bg-slate-50"
         proOptions={{ hideAttribution: true }}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#cbd5e1"
-        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#cbd5e1" />
         <Controls />
         <MiniMap
           nodeStrokeWidth={3}
@@ -186,9 +173,12 @@ export function FlowCanvas() {
         />
 
         {isSimulating && (
-          <Panel position="top-center" className="bg-green-100 px-4 py-2 rounded-lg border border-green-300">
-            <div className="flex items-center gap-2 text-green-800 text-sm font-medium">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <Panel
+            position="top-center"
+            className="rounded-lg border border-green-300 bg-green-100 px-4 py-2"
+          >
+            <div className="flex items-center gap-2 font-medium text-green-800 text-sm">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
               Simulating execution...
             </div>
           </Panel>

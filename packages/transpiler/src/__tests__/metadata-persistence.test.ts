@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import type { FlowGraph } from '@hflow/shared';
 import { v4 as uuidv4 } from 'uuid';
+import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';
 import { YamlParser } from '../parser/YamlParser';
-import type { FlowGraph } from '@hflow/shared';
 
 describe('Metadata Persistence', () => {
   const transpiler = new FlowTranspiler();
@@ -69,8 +69,8 @@ describe('Metadata Persistence', () => {
       const reimportedFlow = parseResult.graph!;
       expect(reimportedFlow.nodes).toHaveLength(2);
 
-      const trigger = reimportedFlow.nodes.find(n => n.id === 'trigger-1');
-      const action = reimportedFlow.nodes.find(n => n.id === 'action-1');
+      const trigger = reimportedFlow.nodes.find((n) => n.id === 'trigger-1');
+      const action = reimportedFlow.nodes.find((n) => n.id === 'action-1');
 
       expect(trigger?.position).toEqual({ x: 100, y: 50 });
       expect(action?.position).toEqual({ x: 200, y: 150 });
@@ -186,8 +186,8 @@ describe('Metadata Persistence', () => {
       expect(parsed.hadMetadata).toBe(true);
 
       // Node IDs should be preserved
-      const trigger = parsed.graph?.nodes.find(n => n.id === 'trigger_1767870543439');
-      const action = parsed.graph?.nodes.find(n => n.id === 'action_1767870548496');
+      const trigger = parsed.graph?.nodes.find((n) => n.id === 'trigger_1767870543439');
+      const action = parsed.graph?.nodes.find((n) => n.id === 'action_1767870548496');
 
       expect(trigger).toBeDefined();
       expect(action).toBeDefined();
@@ -285,9 +285,9 @@ describe('Metadata Persistence', () => {
       expect(parsed.hadMetadata).toBe(true);
 
       const reimported = parsed.graph!;
-      const trigger = reimported.nodes.find(n => n.id === 'trigger-sm');
-      const action1 = reimported.nodes.find(n => n.id === 'action-sm-1');
-      const action2 = reimported.nodes.find(n => n.id === 'action-sm-2');
+      const trigger = reimported.nodes.find((n) => n.id === 'trigger-sm');
+      const action1 = reimported.nodes.find((n) => n.id === 'action-sm-1');
+      const action2 = reimported.nodes.find((n) => n.id === 'action-sm-2');
 
       expect(trigger?.position).toEqual({ x: 250, y: 100 });
       expect(action1?.position).toEqual({ x: 255, y: 240 });
@@ -318,12 +318,13 @@ mode: single
       expect(parsed.graph).toBeDefined();
 
       // Should have generated positions (fallback layout)
-      const nodes = parsed.graph!.nodes;
+      const nodes = parsed.graph?.nodes;
       expect(nodes).toHaveLength(2);
-      expect(nodes[0].position.x).toBeGreaterThanOrEqual(0);
-      expect(nodes[0].position.y).toBeGreaterThanOrEqual(0);
-      expect(nodes[1].position.x).toBeGreaterThanOrEqual(0);
-      expect(nodes[1].position.y).toBeGreaterThanOrEqual(0);
+      expect(nodes).toBeDefined();
+      expect(nodes![0].position.x).toBeGreaterThanOrEqual(0);
+      expect(nodes![0].position.y).toBeGreaterThanOrEqual(0);
+      expect(nodes![1].position.x).toBeGreaterThanOrEqual(0);
+      expect(nodes![1].position.y).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle Home Assistant 2024+ format (triggers/actions)', () => {
@@ -392,7 +393,7 @@ mode: single
 
       expect(parsed.success).toBe(true);
 
-      const condition = parsed.graph!.nodes.find(n => n.id === 'condition-1');
+      const condition = parsed.graph?.nodes.find((n) => n.id === 'condition-1');
       expect(condition?.position).toEqual({ x: 200, y: 200 });
     });
   });
@@ -437,7 +438,7 @@ mode: single
       expect(parsed.success).toBe(true);
       expect(parsed.graph?.nodes).toHaveLength(3);
 
-      const delay = parsed.graph!.nodes.find(n => n.type === 'delay');
+      const delay = parsed.graph?.nodes.find((n) => n.type === 'delay');
       expect(delay?.position).toEqual({ x: 100, y: 100 });
     });
 
@@ -537,7 +538,7 @@ this is not
 
       expect(parsed.success).toBe(false);
       expect(parsed.errors).toBeDefined();
-      expect(parsed.errors!.length).toBeGreaterThan(0);
+      expect(parsed.errors?.length).toBeGreaterThan(0);
     });
 
     it('should reject YAML without triggers', () => {
@@ -690,8 +691,8 @@ mode: single
       expect(parsed.hadMetadata).toBe(true);
 
       // The nodes should be restored with correct IDs
-      const trigger = parsed.graph?.nodes.find(n => n.id === 'trigger_1767870543439');
-      const action = parsed.graph?.nodes.find(n => n.id === 'action_1767870548496');
+      const trigger = parsed.graph?.nodes.find((n) => n.id === 'trigger_1767870543439');
+      const action = parsed.graph?.nodes.find((n) => n.id === 'action_1767870548496');
 
       expect(trigger).toBeDefined();
       expect(action).toBeDefined();
@@ -763,7 +764,7 @@ mode: single
       expect(yaml).toContain('condition: numeric_state');
       expect(yaml).toContain('above: 10');
       expect(yaml).toContain('below: 200');
-      
+
       console.log('Generated YAML:');
       console.log(yaml);
     });

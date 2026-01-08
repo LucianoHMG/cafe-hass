@@ -9,10 +9,12 @@ export type NodeId = z.infer<typeof NodeIdSchema>;
 /**
  * Home Assistant entity ID format: domain.entity_name
  */
-export const EntityIdSchema = z.string().regex(
-  /^[a-z_]+\.[a-z0-9_]+$/,
-  'Entity ID must be in format: domain.entity_name (e.g., light.living_room)'
-);
+export const EntityIdSchema = z
+  .string()
+  .regex(
+    /^[a-z_]+\.[a-z0-9_]+$/,
+    'Entity ID must be in format: domain.entity_name (e.g., light.living_room)'
+  );
 export type EntityId = z.infer<typeof EntityIdSchema>;
 
 /**
