@@ -269,49 +269,265 @@ export function PropertyPanel() {
       )}
 
       {/* Condition-specific fields */}
-      {selectedNode.type === 'condition' && (
-        <>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Condition Type
-            </label>
-            <select
-              value={(selectedNode.data as Record<string, unknown>).condition_type as string || 'state'}
-              onChange={(e) => handleChange('condition_type', e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="state">State</option>
-              <option value="numeric_state">Numeric State</option>
-              <option value="template">Template</option>
-              <option value="time">Time</option>
-              <option value="sun">Sun</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              Entity
-            </label>
-            <EntitySelector
-              value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
-              onChange={(value) => handleChange('entity_id', value)}
-              entities={entities}
-              placeholder="Select entity..."
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              State
-            </label>
-            <input
-              type="text"
-              value={(selectedNode.data as Record<string, unknown>).state as string || ''}
-              onChange={(e) => handleChange('state', e.target.value)}
-              className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., on, below_horizon"
-            />
-          </div>
-        </>
-      )}
+      {selectedNode.type === 'condition' && (() => {
+        const conditionType = (selectedNode.data as Record<string, unknown>).condition_type as string || 'state';
+        
+        return (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Condition Type
+              </label>
+              <select
+                value={conditionType}
+                onChange={(e) => handleChange('condition_type', e.target.value)}
+                className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="state">State</option>
+                <option value="numeric_state">Numeric State</option>
+                <option value="template">Template</option>
+                <option value="time">Time</option>
+                <option value="sun">Sun</option>
+                <option value="zone">Zone</option>
+                <option value="device">Device</option>
+                <option value="and">AND</option>
+                <option value="or">OR</option>
+                <option value="not">NOT</option>
+              </select>
+            </div>
+
+            {/* Common fields for entity-based conditions */}
+            {['state', 'numeric_state'].includes(conditionType) && (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Entity
+                </label>
+                <EntitySelector
+                  value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
+                  onChange={(value) => handleChange('entity_id', value)}
+                  entities={entities}
+                  placeholder="Select entity..."
+                />
+              </div>
+            )}
+
+            {/* State condition fields */}
+            {conditionType === 'state' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).state as string || ''}
+                    onChange={(e) => handleChange('state', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., on, below_horizon"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Attribute (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).attribute as string || ''}
+                    onChange={(e) => handleChange('attribute', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., brightness, temperature"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Numeric state condition fields */}
+            {conditionType === 'numeric_state' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Above (optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={(selectedNode.data as Record<string, unknown>).above as number || ''}
+                    onChange={(e) => handleChange('above', e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Minimum value"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Below (optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={(selectedNode.data as Record<string, unknown>).below as number || ''}
+                    onChange={(e) => handleChange('below', e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Maximum value"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Attribute (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).attribute as string || ''}
+                    onChange={(e) => handleChange('attribute', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., brightness, temperature"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Template condition fields */}
+            {conditionType === 'template' && (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Value Template
+                </label>
+                <textarea
+                  value={(selectedNode.data as Record<string, unknown>).value_template as string || ''}
+                  onChange={(e) => handleChange('value_template', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="{{ states('sensor.temperature') | float > 20 }}"
+                  rows={3}
+                />
+              </div>
+            )}
+
+            {/* Time condition fields */}
+            {conditionType === 'time' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    After (optional)
+                  </label>
+                  <input
+                    type="time"
+                    value={(selectedNode.data as Record<string, unknown>).after as string || ''}
+                    onChange={(e) => handleChange('after', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Before (optional)
+                  </label>
+                  <input
+                    type="time"
+                    value={(selectedNode.data as Record<string, unknown>).before as string || ''}
+                    onChange={(e) => handleChange('before', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Weekday (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).weekday as string || ''}
+                    onChange={(e) => handleChange('weekday', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="mon,tue,wed,thu,fri,sat,sun"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Zone condition fields */}
+            {conditionType === 'zone' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Entity
+                  </label>
+                  <EntitySelector
+                    value={(selectedNode.data as Record<string, unknown>).entity_id as string || ''}
+                    onChange={(value) => handleChange('entity_id', value)}
+                    entities={entities}
+                    placeholder="Select person or device tracker..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Zone
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).zone as string || ''}
+                    onChange={(e) => handleChange('zone', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="zone.home"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Device condition fields */}
+            {conditionType === 'device' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Device ID
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).device_id as string || ''}
+                    onChange={(e) => handleChange('device_id', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Device ID"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Domain
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).domain as string || ''}
+                    onChange={(e) => handleChange('domain', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., binary_sensor, sensor"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Type
+                  </label>
+                  <input
+                    type="text"
+                    value={(selectedNode.data as Record<string, unknown>).type as string || ''}
+                    onChange={(e) => handleChange('type', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., button_short_press"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Common duration field */}
+            {['state', 'numeric_state', 'zone'].includes(conditionType) && (
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  For Duration (optional)
+                </label>
+                <input
+                  type="text"
+                  value={(selectedNode.data as Record<string, unknown>).for as string || ''}
+                  onChange={(e) => handleChange('for', e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="00:05:00 or 5 minutes"
+                />
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Action-specific fields */}
       {selectedNode.type === 'action' && (() => {

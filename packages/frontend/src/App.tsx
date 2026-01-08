@@ -9,6 +9,10 @@ import {
   Loader2,
   AlertCircle,
   Wifi,
+  FileCode,
+  DiamondPlus,
+  FileDown,
+  FileUp,
 } from "lucide-react";
 import { FlowCanvas } from "@/components/canvas/FlowCanvas";
 import { NodePalette } from "@/components/panels/NodePalette";
@@ -16,6 +20,7 @@ import { PropertyPanel } from "@/components/panels/PropertyPanel";
 import { YamlPreview } from "@/components/panels/YamlPreview";
 import { TraceSimulator } from "@/components/simulator/TraceSimulator";
 import { HassSettings } from "@/components/panels/HassSettings";
+import { ImportYamlDialog } from "@/components/panels/ImportYamlDialog";
 import { useFlowStore } from "@/store/flow-store";
 import { useHass } from "@/hooks/useHass";
 import { cn } from "@/lib/utils";
@@ -35,6 +40,7 @@ function App() {
     useFlowStore();
   const [rightTab, setRightTab] = useState<RightPanelTab>("properties");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [importYamlOpen, setImportYamlOpen] = useState(false);
 
   const handleExport = () => {
     const graph = toFlowGraph();
@@ -109,7 +115,7 @@ function App() {
         {/* Header */}
         <header className="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm">
           <div className="flex items-center gap-4">
-            <h1 className="font-bold text-lg text-slate-800">Flow Automator</h1>
+            <h1 className="font-bold text-lg text-slate-800">C.A.F.E.</h1>
             <input
               type="text"
               value={flowName}
@@ -147,9 +153,17 @@ function App() {
             <button
               onClick={handleImport}
               className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
-              title="Import flow"
+              title="Import flow from JSON"
             >
-              <FolderOpen className="w-5 h-5" />
+              <FileUp className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setImportYamlOpen(true)}
+              className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
+              title="Import from YAML"
+            >
+              <FileCode className="w-5 h-5" />
             </button>
 
             <button
@@ -157,7 +171,7 @@ function App() {
               className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
               title="Export flow as JSON"
             >
-              <FileJson className="w-5 h-5" />
+              <FileDown className="w-5 h-5" />
             </button>
 
             <button
@@ -165,7 +179,7 @@ function App() {
               className="p-2 hover:bg-slate-100 rounded-md transition-colors text-slate-600"
               title="New flow"
             >
-              <Save className="w-5 h-5" />
+              <DiamondPlus className="w-5 h-5" />
             </button>
           </div>
         </header>
@@ -244,7 +258,7 @@ function App() {
         {/* Footer */}
         <footer className="h-8 bg-white border-t flex items-center justify-between px-4 text-xs text-slate-500">
           <div className="flex items-center gap-4">
-            <span>Flow Automator v0.1.0</span>
+            <span>C.A.F.E. v0.1.0</span>
             {isStandalone && (
               <span className="text-amber-600">
                 Click the settings icon to connect to a real Home Assistant
@@ -273,6 +287,12 @@ function App() {
         onClose={() => setSettingsOpen(false)}
         config={config}
         onSave={setConfig}
+      />
+
+      {/* Import YAML dialog */}
+      <ImportYamlDialog
+        isOpen={importYamlOpen}
+        onClose={() => setImportYamlOpen(false)}
       />
     </ReactFlowProvider>
   );

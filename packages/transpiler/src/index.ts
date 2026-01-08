@@ -2,6 +2,10 @@
 export { FlowTranspiler, transpiler } from './FlowTranspiler';
 export type { YamlOptions, TranspileResult } from './FlowTranspiler';
 
+// Parser
+export { YamlParser, yamlParser } from './parser/YamlParser';
+export type { ParseResult } from './parser/YamlParser';
+
 // Analyzer
 export { analyzeTopology, getNodeDepths } from './analyzer/topology';
 export type { TopologyAnalysis } from './analyzer/topology';

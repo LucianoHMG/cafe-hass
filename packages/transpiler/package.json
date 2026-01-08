@@ -23,12 +23,15 @@
   "dependencies": {
     "@hflow/shared": "workspace:*",
     "commander": "^12.0.0",
+    "elkjs": "^0.11.0",
     "graphlib": "^2.1.8",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
+    "@types/uuid": "^11.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"

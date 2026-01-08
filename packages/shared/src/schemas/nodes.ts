@@ -74,6 +74,13 @@ export type TriggerNode = z.infer<typeof TriggerNodeSchema>;
 const BaseConditionDataSchema = z.object({
   alias: z.string().optional(),
   condition_type: ConditionTypeSchema,
+  // Common fields
+  attribute: z.string().optional(),
+  for: z.union([z.string(), z.object({
+    hours: z.number().optional(),
+    minutes: z.number().optional(),
+    seconds: z.number().optional(),
+  })]).optional(),
   // State condition
   entity_id: z.string().optional(),
   state: z.union([z.string(), z.array(z.string())]).optional(),
@@ -92,6 +99,11 @@ const BaseConditionDataSchema = z.object({
   before_offset: z.string().optional(),
   // Zone condition
   zone: z.string().optional(),
+  // Device condition
+  device_id: z.string().optional(),
+  domain: z.string().optional(),
+  type: z.string().optional(),
+  subtype: z.string().optional(),
 });
 
 /**

@@ -30,6 +30,36 @@ export interface ConditionNodeData {
   entity_id?: string;
   state?: string;
   template?: string;
+  
+  // Numeric state conditions
+  above?: number;
+  below?: number;
+  
+  // Time conditions
+  after?: string;
+  before?: string;
+  weekday?: string | string[];
+  
+  // Zone conditions
+  zone?: string;
+  
+  // Sun conditions
+  after_offset?: string;
+  before_offset?: string;
+  
+  // Device conditions
+  device_id?: string;
+  domain?: string;
+  type?: string;
+  subtype?: string;
+  
+  // Template conditions
+  value_template?: string;
+  
+  // Generic conditions
+  attribute?: string;
+  for?: string | { hours?: number; minutes?: number; seconds?: number };
+  
   [key: string]: unknown;
 }
 

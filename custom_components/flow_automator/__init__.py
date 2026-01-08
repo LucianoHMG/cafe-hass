@@ -1,4 +1,4 @@
-"""Flow Automator - Visual automation editor for Home Assistant."""
+"""C.A.F.E. - Visual automation editor for Home Assistant."""
 from __future__ import annotations
 
 import logging
@@ -12,12 +12,12 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "flow_automator"
 PANEL_URL = "/flow_automator_panel"
-PANEL_TITLE = "Flow Automator"
+PANEL_TITLE = "C.A.F.E."
 PANEL_ICON = "mdi:graph"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Flow Automator component."""
+    """Set up the C.A.F.E. component."""
 
     # Get the path to the www folder within the component
     www_path = Path(__file__).parent / "www"
@@ -42,13 +42,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         require_admin=True,
     )
 
-    _LOGGER.info("Flow Automator panel registered")
+    _LOGGER.info("C.A.F.E. panel registered")
 
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
-    """Set up Flow Automator from a config entry."""
+    """Set up C.A.F.E. from a config entry."""
     return True
 
 

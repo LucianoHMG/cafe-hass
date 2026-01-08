@@ -52,7 +52,7 @@ export const nodeTypes: NodeTypeConfig[] = [
   },
   {
     type: 'wait',
-    label: 'Wait',
+    label: 'Wait for',
     icon: Hourglass,
     color: 'bg-orange-100 border-orange-400 text-orange-700 hover:bg-orange-200',
     defaultData: {
@@ -68,9 +68,9 @@ export function NodePalette() {
 
   const handleAddNode = useCallback(
     (config: NodeTypeConfig) => {
-      // Calculate position based on existing nodes
-      const baseY = nodes.length * 100 + 100;
-      const baseX = 250;
+      // Calculate position based on existing nodes - horizontal layout
+      const baseX = nodes.length * 250 + 250;
+      const baseY = 150;
 
       addNode({
         id: `${config.type}_${Date.now()}`,

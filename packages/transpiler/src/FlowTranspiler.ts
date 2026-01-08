@@ -5,6 +5,7 @@ import { validateFlowGraph, type ValidationResult } from './analyzer/validator';
 import { NativeStrategy } from './strategies/native';
 import { StateMachineStrategy } from './strategies/state-machine';
 import type { TranspilerStrategy, HAYamlOutput } from './strategies/base';
+import { YamlParser, type ParseResult } from './parser/YamlParser';
 
 /**
  * Options for YAML generation
@@ -133,14 +134,36 @@ export class FlowTranspiler {
     const output = strategy.generate(flow, analysis);
     warnings.push(...output.warnings);
 
-    // Step 5: Serialize to YAML string
+    // Step 5: Inject _flow_automator metadata with node positions
     const yamlContent = output.automation ?? output.script;
-    const yaml = yamlDump(yamlContent, {
-      indent: options.indent ?? 2,
-      lineWidth: options.lineWidth ?? -1,
-      quotingType: '"',
-      forceQuotes: false,
-    });
+    let yaml: string;
+
+    if (yamlContent && typeof yamlContent === 'object') {
+      const metadata = this.generateFlowAutomatorMetadata(flow, strategy);
+      const contentWithMetadata = {
+        ...yamlContent,
+        variables: {
+          ...(yamlContent.variables || {}),
+          _flow_automator: metadata,
+        },
+      };
+
+      // Step 6: Serialize to YAML string with metadata
+      yaml = yamlDump(contentWithMetadata, {
+        indent: options.indent ?? 2,
+        lineWidth: options.lineWidth ?? -1,
+        quotingType: '"',
+        forceQuotes: false,
+      });
+    } else {
+      // Serialize without metadata
+      yaml = yamlDump(yamlContent, {
+        indent: options.indent ?? 2,
+        lineWidth: options.lineWidth ?? -1,
+        quotingType: '"',
+        forceQuotes: false,
+      });
+    }
 
     return {
       success: true,
@@ -179,6 +202,14 @@ export class FlowTranspiler {
   }
 
   /**
+   * Parse Home Assistant YAML back into FlowGraph
+   */
+  fromYaml(yamlString: string): ParseResult {
+    const parser = new YamlParser();
+    return parser.parse(yamlString);
+  }
+
+  /**
    * Get available strategies
    */
   getStrategies(): Array<{ name: string; description: string }> {
@@ -193,6 +224,29 @@ export class FlowTranspiler {
    */
   addStrategy(strategy: TranspilerStrategy): void {
     this.strategies.unshift(strategy); // Add at beginning for priority
+  }
+
+  /**
+   * Generate C.A.F.E. metadata for position persistence
+   */
+  private generateFlowAutomatorMetadata(flow: FlowGraph, strategy: TranspilerStrategy): Record<string, unknown> {
+    const nodePositions: Record<string, { x: number; y: number }> = {};
+
+    // Extract node positions
+    for (const node of flow.nodes) {
+      nodePositions[node.id] = {
+        x: node.position.x,
+        y: node.position.y,
+      };
+    }
+
+    return {
+      version: 1,
+      nodes: nodePositions,
+      graph_id: flow.id,
+      graph_version: flow.version,
+      strategy: strategy.name, // Store which strategy was used for export
+    };
   }
 }
 

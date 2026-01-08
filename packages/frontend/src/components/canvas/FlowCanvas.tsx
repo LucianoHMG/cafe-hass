@@ -38,6 +38,7 @@ export function FlowCanvas() {
     onConnect,
     selectNode,
     addNode,
+    selectedNodeId,
     isSimulating,
     executionPath,
   } = useFlowStore();
@@ -72,10 +73,19 @@ export function FlowCanvas() {
         const { type, defaultData } = JSON.parse(data);
 
         // Get the position where the node was dropped
-        const position = screenToFlowPosition({
+        const dropPosition = screenToFlowPosition({
           x: event.clientX,
           y: event.clientY,
         });
+
+        // Center the node at the cursor position by offsetting by half node dimensions
+        const nodeWidth = 180; // Approximate node width
+        const nodeHeight = 80; // Approximate node height
+        
+        const position = {
+          x: dropPosition.x - nodeWidth / 2,
+          y: dropPosition.y - nodeHeight / 2,
+        };
 
         const newNode = {
           id: `${type}_${Date.now()}`,
@@ -92,37 +102,53 @@ export function FlowCanvas() {
     [screenToFlowPosition, addNode]
   );
 
-  // Animate edges along the execution path during simulation
-  const animatedEdges = useMemo(() => {
-    if (!isSimulating || executionPath.length < 2) {
-      return edges;
-    }
-
+  // Style edges based on simulation state and selected node
+  const styledEdges = useMemo(() => {
     return edges.map((edge) => {
-      // Check if this edge is part of the execution path
+      // Check if this edge is part of the execution path during simulation
       const sourceIdx = executionPath.indexOf(edge.source);
       const targetIdx = executionPath.indexOf(edge.target);
 
-      const isActive =
+      const isActiveInSimulation =
+        isSimulating &&
+        executionPath.length >= 2 &&
         sourceIdx !== -1 &&
         targetIdx !== -1 &&
         targetIdx === sourceIdx + 1;
 
+      // Check if this edge is connected to the selected node
+      const isConnectedToSelected =
+        selectedNodeId &&
+        (edge.source === selectedNodeId || edge.target === selectedNodeId);
+
+      // Determine edge styling based on state
+      let edgeStyle = { strokeWidth: 2, stroke: '#64748b' };
+      let markerEnd = { type: 'arrowclosed', color: '#64748b' };
+
+      if (isActiveInSimulation) {
+        // Simulation takes precedence - green for active path
+        edgeStyle = { stroke: '#22c55e', strokeWidth: 3 };
+        markerEnd = { type: 'arrowclosed', color: '#22c55e' };
+      } else if (isConnectedToSelected) {
+        // Blue highlighting for connected edges
+        edgeStyle = { stroke: '#3b82f6', strokeWidth: 3 };
+        markerEnd = { type: 'arrowclosed', color: '#3b82f6' };
+      }
+
       return {
         ...edge,
-        animated: isActive,
-        style: isActive
-          ? { stroke: '#22c55e', strokeWidth: 3 }
-          : edge.style,
+        animated: isActiveInSimulation,
+        style: edgeStyle,
+        markerEnd,
       };
     });
-  }, [edges, isSimulating, executionPath]);
+  }, [edges, isSimulating, executionPath, selectedNodeId]);
 
   return (
     <div className="w-full h-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
-        edges={animatedEdges}
+        edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -130,6 +156,14 @@ export function FlowCanvas() {
         onDragOver={onDragOver}
         onDrop={onDrop}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: { strokeWidth: 2, stroke: '#64748b' },
+          markerEnd: {
+            type: 'arrowclosed',
+            color: '#64748b',
+          },
+        }}
         fitView
         snapToGrid
         snapGrid={[15, 15]}

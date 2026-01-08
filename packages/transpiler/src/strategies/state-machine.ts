@@ -29,151 +29,13 @@ export class StateMachineStrategy extends BaseStrategy {
   readonly name = 'state-machine';
   readonly description = 'Generates state machine YAML for complex flows with cycles or cross-links';
 
-  /**
-   * Map of node IDs to friendly prefixed IDs
-   */
-  private nodeIdMap: Map<string, string> = new Map();
-
   canHandle(_analysis: TopologyAnalysis): boolean {
     // State machine can handle any topology
     return true;
   }
 
-  /**
-   * Build a mapping from original node IDs to friendly prefixed IDs
-   */
-  private buildNodeIdMap(flow: FlowGraph): void {
-    this.nodeIdMap.clear();
-    const usedIds = new Set<string>();
-
-    for (const node of flow.nodes) {
-      const friendlyId = this.generateFriendlyNodeId(node, usedIds);
-      this.nodeIdMap.set(node.id, friendlyId);
-      usedIds.add(friendlyId);
-    }
-  }
-
-  /**
-   * Generate a friendly, human-readable node ID
-   */
-  private generateFriendlyNodeId(node: FlowNode, usedIds: Set<string>): string {
-    let prefix: string;
-    let suffix: string = '';
-
-    switch (node.type) {
-      case 'trigger':
-        prefix = 'trigger';
-        if ((node as TriggerNode).data.platform) {
-          suffix = (node as TriggerNode).data.platform;
-        }
-        break;
-
-      case 'condition':
-        prefix = 'check';
-        const condData = (node as ConditionNode).data;
-        if (condData.entity_id) {
-          // Extract the entity name part (after the domain)
-          const entityPart = condData.entity_id.split('.')[1] || '';
-          suffix = entityPart;
-        } else if (condData.condition_type === 'template') {
-          suffix = 'template';
-        } else if (condData.condition_type) {
-          suffix = condData.condition_type;
-        }
-        break;
-
-      case 'action':
-        const actData = (node as ActionNode).data;
-        if (actData.service) {
-          // Use the service name as prefix (e.g., "light_turn_on")
-          prefix = actData.service.replace('.', '_');
-          // Add target entity if available
-          if (actData.target?.entity_id) {
-            const targetEntity = Array.isArray(actData.target.entity_id)
-              ? actData.target.entity_id[0]
-              : actData.target.entity_id;
-            if (targetEntity) {
-              suffix = targetEntity.split('.')[1] || '';
-            }
-          }
-        } else {
-          prefix = 'action';
-        }
-        break;
-
-      case 'delay': {
-        prefix = 'delay';
-        const delayData = (node as DelayNode).data.delay;
-        if (delayData) {
-          if (typeof delayData === 'string') {
-            suffix = delayData.replace(/:/g, '');
-          } else if (typeof delayData === 'object') {
-            // It's a duration object {hours, minutes, seconds}
-            const parts: string[] = [];
-            if (delayData.hours) parts.push(`${delayData.hours}h`);
-            if (delayData.minutes) parts.push(`${delayData.minutes}m`);
-            if (delayData.seconds) parts.push(`${delayData.seconds}s`);
-            suffix = parts.join('') || '';
-          }
-        }
-        break;
-      }
-
-      case 'wait':
-        prefix = 'wait';
-        break;
-
-      default:
-        prefix = (node as { type?: string }).type || 'node';
-    }
-
-    // Use alias if provided
-    if (node.data.alias) {
-      const aliasSlug = this.slugify(node.data.alias as string);
-      if (aliasSlug) {
-        prefix = aliasSlug;
-        suffix = '';
-      }
-    }
-
-    // Build the base ID
-    let baseId = suffix ? `${prefix}_${suffix}` : prefix;
-    baseId = this.slugify(baseId);
-
-    // Ensure uniqueness by adding a counter if needed
-    let finalId = baseId;
-    let counter = 2;
-    while (usedIds.has(finalId)) {
-      finalId = `${baseId}_${counter}`;
-      counter++;
-    }
-
-    return finalId;
-  }
-
-  /**
-   * Convert a string to a URL-safe slug
-   */
-  private slugify(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .substring(0, 50); // Limit length
-  }
-
-  /**
-   * Get the friendly ID for a node, or return the original if not mapped
-   */
-  private getFriendlyId(nodeId: string): string {
-    return this.nodeIdMap.get(nodeId) || nodeId;
-  }
-
   generate(flow: FlowGraph, analysis: TopologyAnalysis): HAYamlOutput {
     const warnings: string[] = [];
-
-    // Build the friendly node ID mapping
-    this.buildNodeIdMap(flow);
 
     // Find the entry node (first trigger's first connected node)
     const entryNodeId = this.findFirstActionNode(flow, analysis);
@@ -233,7 +95,7 @@ export class StateMachineStrategy extends BaseStrategy {
       // Initialize the state machine variables
       {
         variables: {
-          current_node: this.getFriendlyId(entryNodeId),
+          current_node: (entryNodeId),
           flow_context: {},
         },
       },
@@ -249,7 +111,7 @@ export class StateMachineStrategy extends BaseStrategy {
                 {
                   service: 'system_log.write',
                   data: {
-                    message: 'Flow Automator: Unknown state "{{ current_node }}", ending flow',
+                    message: 'C.A.F.E.: Unknown state "{{ current_node }}", ending flow',
                     level: 'warning',
                   },
                 },
@@ -356,8 +218,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateActionBlock(node: ActionNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : this.getFriendlyId(nextNodeId);
-    const currentNodeId = this.getFriendlyId(node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
+    const currentNodeId = (node.id);
     const alias = this.generateAlias(node);
 
     const actionCall: Record<string, unknown> = {
@@ -413,9 +275,9 @@ export class StateMachineStrategy extends BaseStrategy {
 
     const trueTargetId = trueEdge?.target ?? 'END';
     const falseTargetId = falseEdge?.target ?? 'END';
-    const trueTarget = trueTargetId === 'END' ? 'END' : this.getFriendlyId(trueTargetId);
-    const falseTarget = falseTargetId === 'END' ? 'END' : this.getFriendlyId(falseTargetId);
-    const currentNodeId = this.getFriendlyId(node.id);
+    const trueTarget = trueTargetId === 'END' ? 'END' : (trueTargetId);
+    const falseTarget = falseTargetId === 'END' ? 'END' : (falseTargetId);
+    const currentNodeId = (node.id);
 
     // Generate Jinja2 template for condition evaluation
     const conditionTemplate = this.buildConditionTemplate(node);
@@ -444,8 +306,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateDelayBlock(node: DelayNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : this.getFriendlyId(nextNodeId);
-    const currentNodeId = this.getFriendlyId(node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
+    const currentNodeId = (node.id);
     const alias = this.generateAlias(node);
 
     return {
@@ -474,8 +336,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generateWaitBlock(node: WaitNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : this.getFriendlyId(nextNodeId);
-    const currentNodeId = this.getFriendlyId(node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
+    const currentNodeId = (node.id);
     const alias = this.generateAlias(node);
 
     const waitAction: Record<string, unknown> = {
@@ -517,8 +379,8 @@ export class StateMachineStrategy extends BaseStrategy {
    */
   private generatePassthroughBlock(node: FlowNode, edges: FlowEdge[]): Record<string, unknown> {
     const nextNodeId = edges[0]?.target ?? 'END';
-    const nextNode = nextNodeId === 'END' ? 'END' : this.getFriendlyId(nextNodeId);
-    const currentNodeId = this.getFriendlyId(node.id);
+    const nextNode = nextNodeId === 'END' ? 'END' : (nextNodeId);
+    const currentNodeId = (node.id);
 
     return {
       conditions: [
@@ -545,11 +407,21 @@ export class StateMachineStrategy extends BaseStrategy {
 
     switch (data.condition_type) {
       case 'state':
-        if (Array.isArray(data.state)) {
-          const states = data.state.map((s) => `'${s}'`).join(', ');
-          return `states('${data.entity_id}') in [${states}]`;
+        if (data.attribute) {
+          // Use state_attr for attribute checks
+          if (Array.isArray(data.state)) {
+            const states = data.state.map((s) => `'${s}'`).join(', ');
+            return `state_attr('${data.entity_id}', '${data.attribute}') in [${states}]`;
+          }
+          return `state_attr('${data.entity_id}', '${data.attribute}') == '${data.state}'`;
+        } else {
+          // Use states() for regular state checks
+          if (Array.isArray(data.state)) {
+            const states = data.state.map((s) => `'${s}'`).join(', ');
+            return `states('${data.entity_id}') in [${states}]`;
+          }
+          return `is_state('${data.entity_id}', '${data.state}')`;
         }
-        return `is_state('${data.entity_id}', '${data.state}')`;
 
       case 'numeric_state':
         return this.buildNumericCondition(data);
@@ -601,6 +473,8 @@ export class StateMachineStrategy extends BaseStrategy {
     const parts: string[] = [];
     const valueExpr = data.value_template
       ? `(${data.value_template})`
+      : data.attribute
+      ? `state_attr('${data.entity_id}', '${data.attribute}') | float`
       : `states('${data.entity_id}') | float`;
 
     if (data.above !== undefined) {

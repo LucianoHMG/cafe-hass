@@ -33,7 +33,7 @@ export const ConditionNode = memo(function ConditionNode({
   return (
     <div
       className={cn(
-        'px-4 py-3 rounded-lg border-2 bg-blue-50 border-blue-400 min-w-[180px]',
+        'px-4 py-3 rounded-lg border-2 bg-blue-50 border-blue-400 min-w-[180px] relative',
         'transition-all duration-200',
         selected && 'ring-2 ring-blue-500 ring-offset-2',
         isActive && 'node-active ring-4 ring-green-500'
@@ -41,7 +41,7 @@ export const ConditionNode = memo(function ConditionNode({
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         className="!w-3 !h-3 !bg-blue-500 !border-blue-700"
       />
 
@@ -62,33 +62,51 @@ export const ConditionNode = memo(function ConditionNode({
           <div className="truncate opacity-75">{data.entity_id}</div>
         )}
         {data.state && <div className="opacity-75">= {data.state}</div>}
+        {data.above !== undefined && <div className="opacity-75">&gt; {data.above}</div>}
+        {data.below !== undefined && <div className="opacity-75">&lt; {data.below}</div>}
+        {data.after && <div className="opacity-75">after: {data.after}</div>}
+        {data.before && <div className="opacity-75">before: {data.before}</div>}
+        {data.zone && <div className="opacity-75">zone: {data.zone}</div>}
+        {data.attribute && <div className="opacity-75">attr: {data.attribute}</div>}
+        {data.for && (
+          <div className="opacity-75">
+            for: {typeof data.for === 'string' ? data.for : `${data.for.hours || 0}h ${data.for.minutes || 0}m ${data.for.seconds || 0}s`}
+          </div>
+        )}
         {data.template && (
           <div className="truncate opacity-75 font-mono text-[10px]">
             {data.template.slice(0, 30)}...
           </div>
         )}
+        {data.value_template && (
+          <div className="truncate opacity-75 font-mono text-[10px]">
+            {data.value_template.slice(0, 30)}...
+          </div>
+        )}
       </div>
 
       {/* True/False output handles */}
-      <div className="flex justify-between mt-3 text-[10px] font-medium">
-        <div className="text-green-600 flex flex-col items-center">
-          <span>Yes</span>
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="true"
-            className="!relative !transform-none !w-3 !h-3 !bg-green-500 !border-green-700 !mt-1"
-          />
-        </div>
-        <div className="text-red-600 flex flex-col items-center">
-          <span>No</span>
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="false"
-            className="!relative !transform-none !w-3 !h-3 !bg-red-500 !border-red-700 !mt-1"
-          />
-        </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="true"
+        style={{ top: '30%' }}
+        className="!w-3 !h-3 !bg-green-500 !border-green-700"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="false"
+        style={{ top: '70%' }}
+        className="!w-3 !h-3 !bg-red-500 !border-red-700"
+      />
+      
+      {/* Labels for handles */}
+      <div className="absolute right-[-35px] top-[30%] transform -translate-y-1/2 text-[10px] font-medium text-green-700 bg-white px-1 py-0.5 rounded border border-green-200 shadow-sm">
+        Yes
+      </div>
+      <div className="absolute right-[-30px] top-[70%] transform -translate-y-1/2 text-[10px] font-medium text-red-700 bg-white px-1 py-0.5 rounded border border-red-200 shadow-sm">
+        No
       </div>
     </div>
   );

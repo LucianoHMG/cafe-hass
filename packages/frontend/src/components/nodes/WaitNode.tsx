@@ -28,7 +28,7 @@ export const WaitNode = memo(function WaitNode({
     >
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         className="!w-3 !h-3 !bg-orange-500 !border-orange-700"
       />
 
@@ -37,7 +37,7 @@ export const WaitNode = memo(function WaitNode({
           <Hourglass className="w-4 h-4 text-orange-700" />
         </div>
         <span className="font-semibold text-orange-900 text-sm">
-          {data.alias || 'Wait'}
+          {data.alias || 'Wait for'}
         </span>
       </div>
 
@@ -54,7 +54,7 @@ export const WaitNode = memo(function WaitNode({
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         className="!w-3 !h-3 !bg-orange-500 !border-orange-700"
       />
     </div>

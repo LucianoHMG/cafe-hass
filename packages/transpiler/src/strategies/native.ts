@@ -211,7 +211,7 @@ export class NativeStrategy extends BaseStrategy {
     }
 
     return Object.fromEntries(
-      Object.entries(condition).filter(([, v]) => v !== undefined)
+      Object.entries(condition).filter(([, v]) => v !== undefined && v !== '')
     );
   }
 
