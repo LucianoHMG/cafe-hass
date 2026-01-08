@@ -1,6 +1,6 @@
 import { Clock, DiamondPlus, Download, Search, ToggleLeft } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useHassContext } from '@/App';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useHass } from '@/hooks/useHass';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
+import { convertAutomationConfigToNodes } from '@/lib/automation-converter';
 import { useFlowStore } from '@/store/flow-store';
 
 interface AutomationImportDialogProps {
@@ -22,6 +24,7 @@ interface AutomationImportDialogProps {
 interface HaAutomation {
   entity_id: string;
   attributes: {
+    id?: string;
     friendly_name?: string;
     description?: string;
     last_triggered?: string;
@@ -34,20 +37,30 @@ interface HaAutomation {
 
 export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const { hass } = useHassContext();
+  const { hass, config: hassConfig } = useHass();
   const { setFlowName, reset } = useFlowStore();
 
   // Get all automations from HA
   const automations = useMemo(() => {
-    if (!hass?.states) return [];
+    if (!hass?.states) {
+      console.log('C.A.F.E.: No hass.states available');
+      return [];
+    }
 
-    return Object.values(hass.states)
-      .filter((entity: any) => entity.entity_id.startsWith('automation.'))
-      .map((entity: any) => ({
-        entity_id: entity.entity_id,
-        attributes: entity.attributes || {},
-        state: entity.state,
-      })) as HaAutomation[];
+    console.log('C.A.F.E.: Total entities in hass.states:', Object.keys(hass.states).length);
+    console.log('C.A.F.E.: Sample entity keys:', Object.keys(hass.states).slice(0, 10));
+    
+    const automationEntities = Object.values(hass.states)
+      .filter((entity: any) => entity.entity_id.startsWith('automation.'));
+    
+    console.log('C.A.F.E.: Found automation entities:', automationEntities.length);
+    console.log('C.A.F.E.: Automation entity IDs:', automationEntities.map((e: any) => e.entity_id));
+
+    return automationEntities.map((entity: any) => ({
+      entity_id: entity.entity_id,
+      attributes: entity.attributes || {},
+      state: entity.state,
+    })) as HaAutomation[];
   }, [hass]);
 
   // Filter automations based on search term
@@ -66,12 +79,16 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   const handleImportAutomation = async (automation: HaAutomation) => {
     try {
       console.log('C.A.F.E.: Opening automation:', automation.entity_id);
+      console.log('C.A.F.E.: Automation attributes:', automation.attributes);
 
-      // Extract automation ID from entity_id (remove 'automation.' prefix)
-      const automationId = automation.entity_id.replace('automation.', '');
+      // Try to get the numeric ID from attributes, fallback to entity_id without prefix
+      const automationId = automation.attributes.id
+        || automation.entity_id.replace('automation.', '');
 
-      // Get API instance and update with current hass
-      const api = getHomeAssistantAPI(hass);
+      console.log('C.A.F.E.: Using automation ID:', automationId);
+
+      // Get API instance and update with current hass and config
+      const api = getHomeAssistantAPI(hass, hassConfig);
 
       if (!api.isConnected()) {
         throw new Error('No Home Assistant connection available');
@@ -83,128 +100,61 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         automation.attributes.friendly_name
       );
 
+      console.log('C.A.F.E.: ====================================');
+      console.log('C.A.F.E.: AUTOMATION CONFIG RETRIEVED');
+      console.log('C.A.F.E.: ====================================');
+      console.log('C.A.F.E.: Automation Entity ID:', automation.entity_id);
+      console.log('C.A.F.E.: Automation Numeric ID:', automationId);
+      console.log('C.A.F.E.: Automation Name:', automation.attributes.friendly_name);
+      console.log('C.A.F.E.: Config:', config);
+      console.log('C.A.F.E.: Full Config JSON:', JSON.stringify(config, null, 2));
+      console.log('C.A.F.E.: ====================================');
+
       // Reset current flow and set name
       reset();
       setFlowName(automation.attributes.friendly_name || automationId);
 
       if (config) {
         // Convert automation config to visual nodes
-        await convertAutomationToNodes(config);
-        alert(
+        console.log('C.A.F.E.: Converting automation config to nodes:', config);
+
+        const { nodes, edges } = convertAutomationConfigToNodes(config);
+        const { addNode, onConnect } = useFlowStore.getState();
+
+        // Create all nodes
+        for (const node of nodes) {
+          addNode(node);
+        }
+
+        // Create all edges
+        for (const edge of edges) {
+          onConnect({
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle,
+            targetHandle: null,
+          });
+        }
+
+        console.log('C.A.F.E.: Automation nodes created successfully');
+
+        toast.success(
           `Automation "${automation.attributes.friendly_name || automationId}" imported successfully!`
         );
       } else {
-        alert(
-          `Automation "${automation.attributes.friendly_name || automationId}" opened!\n\nNote: Could not fetch configuration automatically.\nYou can now create a new flow with the same name.`
+        toast.warning(
+          `Automation "${automation.attributes.friendly_name || automationId}" opened!`,
+          {
+            description: 'Could not fetch configuration automatically. You can now create a new flow with the same name.'
+          }
         );
       }
 
       onClose();
     } catch (error) {
       console.error('C.A.F.E.: Failed to open automation:', error);
-      alert(`Failed to import automation: ${(error as Error).message}`);
+      toast.error(`Failed to import automation: ${(error as Error).message}`);
     }
-  };
-
-  const convertAutomationToNodes = async (config: any) => {
-    console.log('C.A.F.E.: Converting automation config to nodes:', config);
-
-    const { addNode } = useFlowStore.getState();
-    let xOffset = 100;
-    const yOffset = 100;
-    const nodeSpacing = 200;
-
-    // Create trigger nodes
-    if (config.triggers || config.trigger) {
-      const triggers = Array.isArray(config.triggers)
-        ? config.triggers
-        : Array.isArray(config.trigger)
-          ? config.trigger
-          : [config.trigger];
-
-      for (const [index, trigger] of triggers.entries()) {
-        const nodeId = `trigger-${Date.now()}-${index}`;
-        addNode({
-          id: nodeId,
-          type: 'trigger',
-          position: { x: xOffset, y: yOffset },
-          data: {
-            alias: `Trigger ${index + 1}`,
-            platform: trigger.platform || trigger.trigger || 'unknown',
-            entity_id: trigger.entity_id,
-            to: trigger.to,
-            from: trigger.from,
-            event_type: trigger.event_type,
-            ...trigger,
-          },
-        });
-        xOffset += nodeSpacing;
-      }
-    }
-
-    // Create condition nodes
-    if (config.conditions || config.condition) {
-      const conditions = Array.isArray(config.conditions)
-        ? config.conditions
-        : Array.isArray(config.condition)
-          ? config.condition
-          : [config.condition];
-
-      for (const [index, condition] of conditions.entries()) {
-        const nodeId = `condition-${Date.now()}-${index}`;
-        addNode({
-          id: nodeId,
-          type: 'condition',
-          position: { x: xOffset, y: yOffset },
-          data: {
-            alias: `Condition ${index + 1}`,
-            condition_type: condition.condition || condition.platform || 'unknown',
-            entity_id: condition.entity_id,
-            state: condition.state,
-            ...condition,
-          },
-        });
-        xOffset += nodeSpacing;
-      }
-    }
-
-    // Create action nodes
-    if (config.actions || config.action) {
-      const actions = Array.isArray(config.actions)
-        ? config.actions
-        : Array.isArray(config.action)
-          ? config.action
-          : [config.action];
-
-      for (const [index, action] of actions.entries()) {
-        const nodeId = `action-${Date.now()}-${index}`;
-
-        // Determine node type based on action
-        let nodeType = 'action';
-        if (action.delay) {
-          nodeType = 'delay';
-        } else if (action.wait_template || action.wait_for_trigger) {
-          nodeType = 'wait';
-        }
-
-        addNode({
-          id: nodeId,
-          type: nodeType,
-          position: { x: xOffset, y: yOffset },
-          data: {
-            alias: `Action ${index + 1}`,
-            service: action.action || action.service || '',
-            entity_id: action.entity_id,
-            data: action.data || action.service_data || {},
-            delay: action.delay,
-            ...action,
-          },
-        });
-        xOffset += nodeSpacing;
-      }
-    }
-
-    console.log('C.A.F.E.: Automation nodes created successfully');
   };
 
   const formatLastTriggered = (timestamp?: string) => {
@@ -229,7 +179,7 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col">
         <DialogHeader className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-8">
             <div>
               <DialogTitle>Open Automation</DialogTitle>
               <DialogDescription>Open an existing automation or create a new one</DialogDescription>
@@ -271,9 +221,16 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         <div className="flex-1 overflow-y-auto">
           {filteredAutomations.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              {automations.length === 0
-                ? 'No automations found in Home Assistant'
-                : 'No automations match your search'}
+              {automations.length === 0 ? (
+                <div className="space-y-2">
+                  <p>No Home Assistant connection</p>
+                  <p className="text-xs">
+                    Configure your Home Assistant connection in Settings to view automations
+                  </p>
+                </div>
+              ) : (
+                'No automations match your search'
+              )}
             </div>
           ) : (
             <div className="divide-y">

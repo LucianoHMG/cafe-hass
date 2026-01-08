@@ -10,7 +10,7 @@ import {
   ReactFlow,
   useReactFlow,
 } from '@xyflow/react';
-import { type DragEvent, useCallback, useMemo, useRef } from 'react';
+import { type DragEvent, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ActionNode, ConditionNode, DelayNode, TriggerNode, WaitNode } from '@/components/nodes';
 import { useFlowStore } from '@/store/flow-store';
 
@@ -37,7 +37,12 @@ export function FlowCanvas() {
   } = useFlowStore();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setViewport } = useReactFlow();
+
+  // Set initial zoom level
+  useEffect(() => {
+    setViewport({ x: 0, y: 0, zoom: 0.75 });
+  }, [setViewport]);
 
   const onSelectionChange = useCallback(
     ({ nodes: selectedNodes }: OnSelectionChangeParams) => {
@@ -156,7 +161,11 @@ export function FlowCanvas() {
             color: '#64748b',
           },
         }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+        maxZoom={2}
+        minZoom={0.3}
         fitView
+        fitViewOptions={{ maxZoom: 0.75 }}
         snapToGrid
         snapGrid={[15, 15]}
         deleteKeyCode={['Backspace', 'Delete']}

@@ -116,7 +116,7 @@ export function TraceSimulator() {
   const conditionNodes = nodes.filter((n) => n.type === 'condition');
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="h-full space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground text-sm">Trace Simulator</h3>
         <div className="flex gap-1">

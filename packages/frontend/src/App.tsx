@@ -11,6 +11,7 @@ import {
   Settings,
   Wifi,
 } from 'lucide-react';
+import { Toaster } from 'sonner';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { FlowCanvas } from '@/components/canvas/FlowCanvas';
 import { AutomationImportDialog } from '@/components/panels/AutomationImportDialog';
@@ -273,7 +274,7 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
               <Tabs
                 value={rightTab}
                 onValueChange={(value) => setRightTab(value as RightPanelTab)}
-                className="flex flex-1 flex-col"
+                className="flex flex-1 flex-col min-h-0"
               >
                 <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
                   <TabsTrigger value="properties">Properties</TabsTrigger>
@@ -334,6 +335,7 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
             setAutomationImportOpen(false);
           }}
         />
+        <Toaster />
       </ReactFlowProvider>
     </HassContext.Provider>
   );

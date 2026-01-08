@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  createConnection,
+  createLongLivedTokenAuth,
+  subscribeEntities,
+  subscribeServices,
+} from 'home-assistant-js-websocket';
+import type { Connection, HassEntities, HassServices } from 'home-assistant-js-websocket';
 
 /**
  * Home Assistant entity state
@@ -41,6 +48,8 @@ export interface HassAPI {
   states: Record<string, HassEntity>;
   services: Record<string, Record<string, HassService>>;
   callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
+  connection?: Connection | null;
+  callApi?: (method: string, path: string, data?: any) => Promise<any>;
 }
 
 /**
@@ -79,262 +88,17 @@ function saveConfig(config: HassConfig): void {
   }
 }
 
-// Mock data for standalone development
-const MOCK_ENTITIES: HassEntity[] = [
-  {
-    entity_id: 'light.living_room',
-    state: 'on',
-    attributes: { brightness: 255, friendly_name: 'Living Room Light' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'light.kitchen',
-    state: 'off',
-    attributes: { friendly_name: 'Kitchen Light' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'light.bedroom',
-    state: 'on',
-    attributes: { brightness: 128, friendly_name: 'Bedroom Light' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'sensor.temperature',
-    state: '22.5',
-    attributes: { unit_of_measurement: '°C', friendly_name: 'Temperature' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'sensor.humidity',
-    state: '45',
-    attributes: { unit_of_measurement: '%', friendly_name: 'Humidity' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'binary_sensor.motion',
-    state: 'off',
-    attributes: { device_class: 'motion', friendly_name: 'Motion Sensor' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'binary_sensor.door',
-    state: 'off',
-    attributes: { device_class: 'door', friendly_name: 'Front Door' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'sun.sun',
-    state: 'above_horizon',
-    attributes: {
-      next_dawn: new Date().toISOString(),
-      next_dusk: new Date().toISOString(),
-      friendly_name: 'Sun',
-    },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'switch.fan',
-    state: 'off',
-    attributes: { friendly_name: 'Ceiling Fan' },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-  {
-    entity_id: 'climate.thermostat',
-    state: 'heat',
-    attributes: {
-      temperature: 21,
-      current_temperature: 20,
-      friendly_name: 'Thermostat',
-    },
-    last_changed: new Date().toISOString(),
-    last_updated: new Date().toISOString(),
-  },
-];
-
-const MOCK_SERVICES: Record<string, Record<string, HassService>> = {
-  light: {
-    turn_on: {
-      name: 'Turn on',
-      description: 'Turn on a light',
-      fields: {
-        brightness: {
-          name: 'Brightness',
-          description: 'Brightness level (0-255)',
-          example: 255,
-          selector: { number: { min: 0, max: 255 } },
-        },
-        brightness_pct: {
-          name: 'Brightness %',
-          description: 'Brightness percentage (0-100)',
-          example: 100,
-          selector: { number: { min: 0, max: 100, unit_of_measurement: '%' } },
-        },
-        color_temp: {
-          name: 'Color Temperature',
-          description: 'Color temperature in mireds',
-          example: 250,
-          selector: { number: { min: 153, max: 500 } },
-        },
-        color_temp_kelvin: {
-          name: 'Color Temp (K)',
-          description: 'Color temperature in Kelvin',
-          example: 4000,
-          selector: { number: { min: 2000, max: 6500, unit_of_measurement: 'K' } },
-        },
-        rgb_color: {
-          name: 'RGB Color',
-          description: 'RGB color as [R, G, B]',
-          example: [255, 100, 100],
-          selector: { color_rgb: {} },
-        },
-        transition: {
-          name: 'Transition',
-          description: 'Transition time in seconds',
-          example: 2,
-          selector: { number: { min: 0, max: 300, unit_of_measurement: 's' } },
-        },
-        flash: {
-          name: 'Flash',
-          description: 'Flash the light',
-          example: 'short',
-          selector: { select: { options: ['short', 'long'] } },
-        },
-        effect: {
-          name: 'Effect',
-          description: 'Light effect',
-          example: 'colorloop',
-          selector: { text: {} },
-        },
-      },
-      target: { entity: [{ domain: 'light' }] },
-    },
-    turn_off: {
-      name: 'Turn off',
-      description: 'Turn off a light',
-      fields: {
-        transition: {
-          name: 'Transition',
-          description: 'Transition time in seconds',
-          example: 2,
-          selector: { number: { min: 0, max: 300, unit_of_measurement: 's' } },
-        },
-      },
-      target: { entity: [{ domain: 'light' }] },
-    },
-    toggle: {
-      name: 'Toggle',
-      description: 'Toggle a light',
-      fields: {
-        transition: {
-          name: 'Transition',
-          description: 'Transition time in seconds',
-          example: 2,
-          selector: { number: { min: 0, max: 300, unit_of_measurement: 's' } },
-        },
-      },
-      target: { entity: [{ domain: 'light' }] },
-    },
-  },
-  switch: {
-    turn_on: {
-      name: 'Turn on',
-      description: 'Turn on a switch',
-      fields: {},
-      target: { entity: [{ domain: 'switch' }] },
-    },
-    turn_off: {
-      name: 'Turn off',
-      description: 'Turn off a switch',
-      fields: {},
-      target: { entity: [{ domain: 'switch' }] },
-    },
-    toggle: {
-      name: 'Toggle',
-      description: 'Toggle a switch',
-      fields: {},
-      target: { entity: [{ domain: 'switch' }] },
-    },
-  },
-  notify: {
-    mobile_app: {
-      name: 'Send notification',
-      description: 'Send a notification to mobile app',
-      fields: {
-        message: {
-          name: 'Message',
-          description: 'Notification message',
-          required: true,
-          example: 'Hello!',
-        },
-        title: {
-          name: 'Title',
-          description: 'Notification title',
-          example: 'Alert',
-        },
-      },
-    },
-  },
-  climate: {
-    set_temperature: {
-      name: 'Set Temperature',
-      description: 'Set target temperature',
-      fields: {
-        temperature: {
-          name: 'Temperature',
-          description: 'Target temperature',
-          required: true,
-          example: 21,
-        },
-      },
-      target: { entity: [{ domain: 'climate' }] },
-    },
-  },
-  scene: {
-    turn_on: {
-      name: 'Activate',
-      description: 'Activate a scene',
-      fields: {},
-      target: { entity: [{ domain: 'scene' }] },
-    },
-  },
-  script: {
-    turn_on: {
-      name: 'Run script',
-      description: 'Run a script',
-      fields: {},
-      target: { entity: [{ domain: 'script' }] },
-    },
-  },
-  homeassistant: {
-    restart: {
-      name: 'Restart',
-      description: 'Restart Home Assistant',
-      fields: {},
-    },
-    reload_all: {
-      name: 'Reload All',
-      description: 'Reload all configuration',
-      fields: {},
-    },
-  },
-};
+export interface HassConfig {
+  url: string;
+  token: string;
+}
 
 /**
  * Hook to access Home Assistant API
  * Supports three modes:
  * 1. Embedded in HA (uses window.hass)
- * 2. Standalone with token (uses REST API)
- * 3. Standalone without token (uses mock data)
+ * 2. Standalone with token (uses REST API)  
+ * 3. Standalone without token (empty data)
  */
 export function useHass() {
   const [config, setConfigState] = useState<HassConfig>(loadConfig);
@@ -344,37 +108,85 @@ export function useHass() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [wsConnection, setWsConnection] = useState<Connection | null>(null);
 
   // Check if running inside HA's iframe or panel
   const isInHomeAssistant = useMemo(() => {
     if (typeof window === 'undefined') return false;
 
     // Check for window.hass
-    const hassWindow = window as unknown as { hass?: unknown };
-    if (hassWindow.hass) return true;
+    const hassWindow = window as unknown as {
+      hass?: unknown;
+      __HA_ADDON__?: boolean;
+      hassConnection?: unknown;
+      customCards?: unknown;
+    };
+    if (hassWindow.hass) {
+      console.log('C.A.F.E.: HA detected via window.hass');
+      return true;
+    }
 
     // Check if we're in an iframe with HA context
     try {
       if (window.parent && window.parent !== window) {
         const parentHass = (window.parent as unknown as { hass?: unknown }).hass;
-        if (parentHass) return true;
+        if (parentHass) {
+          console.log('C.A.F.E.: HA detected via parent iframe window.hass');
+          return true;
+        }
       }
     } catch {
       // Cross-origin iframe access blocked, but we might still be in HA
     }
 
     // Check URL patterns that indicate we're running in HA
-    const hostname = window.location.hostname;
     const pathname = window.location.pathname;
+    const hostname = window.location.hostname;
 
-    // If served from /cafe_static/ path, we're likely in HA
-    if (pathname.includes('/cafe_static/')) return true;
-
-    // If hostname looks like HA (not localhost dev server)
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.includes('5173')) {
+    // If served from /cafe_static/ path, we're likely in HA (but not on localhost dev)
+    if (pathname.includes('/cafe_static/') && !hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+      console.log('C.A.F.E.: HA detected via /cafe_static/ path');
       return true;
     }
 
+    // Check for Home Assistant specific URLs
+    if (pathname.startsWith('/api/hassio_ingress/')) {
+      console.log('C.A.F.E.: HA detected via Hassio ingress path');
+      return true;
+    }
+
+    // Check for HA local path (only if it's specifically HA related)
+    if (
+      pathname.includes('/local/') &&
+      (pathname.includes('/hacs/') || pathname.includes('/community/'))
+    ) {
+      console.log('C.A.F.E.: HA detected via HACS local path');
+      return true;
+    }
+
+    // Check if we have specific HA window context
+    if (hassWindow.__HA_ADDON__ || hassWindow.hassConnection || hassWindow.customCards) {
+      console.log('C.A.F.E.: HA detected via window context properties');
+      return true;
+    }
+
+    // Check for Home Assistant specific headers or document properties
+    const documentElement = document.documentElement;
+    if (
+      documentElement.classList.contains('home-assistant') ||
+      document.querySelector('home-assistant') ||
+      document.querySelector('ha-panel-iframe')
+    ) {
+      console.log('C.A.F.E.: HA detected via DOM elements');
+      return true;
+    }
+
+    console.log('C.A.F.E.: No HA detection triggers found', {
+      pathname,
+      hostname,
+      hasWindowHass: !!hassWindow.hass,
+      hasParentAccess: window.parent !== window,
+    });
     return false;
   }, []);
 
@@ -484,69 +296,89 @@ export function useHass() {
   const isStandalone = !isEmbedded && !hasRemoteConfig;
   const isRemote = !isEmbedded && hasRemoteConfig;
 
-  // Fetch data from remote HA instance
+  // Fetch data from remote HA instance using WebSocket
   useEffect(() => {
     if (!isRemote) return;
 
-    console.log('C.A.F.E.: Fetching data from Home Assistant...', {
+    console.log('C.A.F.E.: Establishing WebSocket connection to Home Assistant...', {
       url: config.url,
       hasToken: !!config.token,
     });
 
-    const fetchData = async () => {
+    const establishConnection = async () => {
       setIsLoading(true);
       setConnectionError(null);
 
       try {
-        const headers = {
-          Authorization: `Bearer ${config.token}`,
-          'Content-Type': 'application/json',
+        // Create WebSocket connection
+        const auth = createLongLivedTokenAuth(config.url, config.token);
+        const connection = await createConnection({ auth });
+
+        console.log('C.A.F.E.: WebSocket connection established successfully');
+        setWsConnection(connection);
+
+        // Handle connection events (set these up before subscribing)
+        connection.addEventListener('ready', () => {
+          console.log('C.A.F.E.: WebSocket connection ready');
+          setConnectionError(null);
+          setIsLoading(false);
+        });
+
+        connection.addEventListener('disconnected', () => {
+          console.log('C.A.F.E.: WebSocket connection disconnected');
+          setConnectionError('Connection lost');
+        });
+
+        connection.addEventListener('reconnect-error', (err) => {
+          console.error('C.A.F.E.: WebSocket reconnection failed:', err);
+          setConnectionError('Reconnection failed');
+        });
+
+        // Subscribe to entity state changes
+        const unsubscribeEntities = subscribeEntities(connection, (entities: HassEntities) => {
+          const entitiesArray = Object.values(entities).map((entity) => ({
+            entity_id: entity.entity_id,
+            state: entity.state,
+            attributes: entity.attributes || {},
+            last_changed: entity.last_changed || '',
+            last_updated: entity.last_updated || '',
+          }));
+          console.log('C.A.F.E.: Received entity updates:', entitiesArray.length, 'entities');
+          setRemoteEntities(entitiesArray);
+          // Also mark as loaded once we receive entities
+          setIsLoading(false);
+        });
+
+        // Subscribe to service registry changes
+        const unsubscribeServices = subscribeServices(connection, (services: HassServices) => {
+          console.log('C.A.F.E.: Received service updates for domains:', Object.keys(services));
+          setRemoteServices(services as Record<string, Record<string, HassService>>);
+        });
+
+        // Cleanup function
+        return () => {
+          console.log('C.A.F.E.: Cleaning up WebSocket connection');
+          unsubscribeEntities();
+          unsubscribeServices();
+          connection.close();
+          setWsConnection(null);
         };
-
-        console.log('C.A.F.E.: Fetching states from', `${config.url}/api/states`);
-
-        // Fetch states
-        const statesResponse = await fetch(`${config.url}/api/states`, { headers });
-        if (!statesResponse.ok) {
-          const errorText = await statesResponse.text();
-          console.error('C.A.F.E.: States fetch failed:', statesResponse.status, errorText);
-          throw new Error(`Failed to fetch states: ${statesResponse.status} - ${errorText}`);
-        }
-        const states: HassEntity[] = await statesResponse.json();
-        console.log('C.A.F.E.: Successfully fetched', states.length, 'entities');
-        setRemoteEntities(states);
-
-        console.log('C.A.F.E.: Fetching services from', `${config.url}/api/services`);
-
-        // Fetch services
-        const servicesResponse = await fetch(`${config.url}/api/services`, { headers });
-        if (!servicesResponse.ok) {
-          const errorText = await servicesResponse.text();
-          console.error('C.A.F.E.: Services fetch failed:', servicesResponse.status, errorText);
-          throw new Error(`Failed to fetch services: ${servicesResponse.status} - ${errorText}`);
-        }
-        const servicesData: Array<{ domain: string; services: Record<string, HassService> }> =
-          await servicesResponse.json();
-
-        // Transform services array to Record
-        const servicesMap: Record<string, Record<string, HassService>> = {};
-        for (const item of servicesData) {
-          servicesMap[item.domain] = item.services;
-        }
-        console.log(
-          'C.A.F.E.: Successfully fetched services for domains:',
-          Object.keys(servicesMap)
-        );
-        setRemoteServices(servicesMap);
       } catch (error) {
-        console.error('Failed to fetch HA data:', error);
-        setConnectionError(error instanceof Error ? error.message : 'Connection failed');
-      } finally {
+        console.error('C.A.F.E.: Failed to establish WebSocket connection:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+        setConnectionError(errorMessage);
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    const cleanup = establishConnection();
+
+    // Cleanup on unmount or config change
+    return () => {
+      if (cleanup instanceof Promise) {
+        cleanup.then((cleanupFn) => cleanupFn?.());
+      }
+    };
   }, [isRemote, config.url, config.token]);
 
   // Build the hass API object
@@ -557,37 +389,57 @@ export function useHass() {
       return hassWindow.hass;
     }
 
-    // Mode 2: Remote connection (even if still loading, don't fall back to mock)
+    // Mode 2: Remote connection - use WebSocket API
     if (isRemote) {
       return {
         states: Object.fromEntries(remoteEntities.map((e) => [e.entity_id, e])),
         services: remoteServices,
-        callService: async (domain, service, data) => {
-          const response = await fetch(`${config.url}/api/services/${domain}/${service}`, {
-            method: 'POST',
+        connection: wsConnection,
+        callApi: async (method: string, path: string, data?: any) => {
+          if (!config.url || !config.token) {
+            throw new Error('No authentication configured');
+          }
+
+          // Use direct fetch for REST API calls
+          const url = `${config.url}/api/${path}`;
+          const response = await fetch(url, {
+            method,
             headers: {
-              Authorization: `Bearer ${config.token}`,
+              'Authorization': `Bearer ${config.token}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data || {}),
+            body: data ? JSON.stringify(data) : undefined,
           });
+
           if (!response.ok) {
-            throw new Error(`Service call failed: ${response.status}`);
+            throw new Error(`API error: ${response.status} ${response.statusText}`);
           }
+
+          return await response.json();
         },
-      };
+        callService: async (domain, service, data) => {
+          if (!wsConnection) {
+            throw new Error('WebSocket connection not available');
+          }
+          return wsConnection.sendMessagePromise({
+            type: 'call_service',
+            domain,
+            service,
+            service_data: data || {},
+          });
+        },
+      } as HassAPI;
     }
 
-    // Mode 3: Mock data (standalone without config)
+    // Mode 3: No config yet - return empty hass object
     return {
-      states: Object.fromEntries(MOCK_ENTITIES.map((e) => [e.entity_id, e])),
-      services: MOCK_SERVICES,
-      callService: async (domain, service, data) => {
-        console.log(`[Mock HA] Calling ${domain}.${service}`, data);
-        await new Promise((r) => setTimeout(r, 200));
+      states: {},
+      services: {},
+      callService: async () => {
+        console.warn('No Home Assistant connection configured');
       },
     };
-  }, [isEmbedded, isRemote, remoteEntities, remoteServices, config.url, config.token]);
+  }, [isEmbedded, isRemote, remoteEntities, remoteServices, wsConnection, config.url, config.token]);
 
   const entities = useMemo(() => Object.values(hass?.states ?? {}), [hass?.states]);
 

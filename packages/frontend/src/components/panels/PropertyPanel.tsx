@@ -1,6 +1,5 @@
 import { Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
-import { useHassContext } from '@/App';
 import { Button } from '@/components/ui/button';
 import { EntitySelector } from '@/components/ui/EntitySelector';
 import { Input } from '@/components/ui/input';
@@ -21,12 +20,11 @@ export function PropertyPanel() {
   const nodes = useFlowStore((s) => s.nodes);
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
   const removeNode = useFlowStore((s) => s.removeNode);
-  const { entities, getAllServices, getServiceDefinition } = useHass();
-  const { hass } = useHassContext();
+  const { hass, entities, getAllServices, getServiceDefinition } = useHass();
 
-  // Use entities from context if available (HA integration), otherwise from hook (standalone)
+  // Use entities from hass object directly
   const effectiveEntities = useMemo(() => {
-    if (hass?.states) {
+    if (hass?.states && Object.keys(hass.states).length > 0) {
       return Object.values(hass.states).map((state: any) => ({
         entity_id: state.entity_id,
         state: state.state,
@@ -41,8 +39,7 @@ export function PropertyPanel() {
   console.log(
     'C.A.F.E. PropertyPanel: Using entities:',
     effectiveEntities.length,
-    'from',
-    hass?.states ? 'HA context' : 'hook'
+    'from hass object'
   );
 
   const selectedNode = useMemo(
@@ -116,7 +113,7 @@ export function PropertyPanel() {
   };
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="h-full flex-1 space-y-4 overflow-y-auto p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground text-sm">
           {selectedNode.type
