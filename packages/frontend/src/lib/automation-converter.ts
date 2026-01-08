@@ -124,10 +124,20 @@ export function convertAutomationConfigToNodes(config: any): {
 
   // Track condition nodes and their children for proper sourceHandle assignment
   const conditionChildrenMap = new Map<string, { thenChild?: string; elseChild?: string }>();
+  
+  // Store trigger nodes for multi-trigger connections
+  const triggerNodes: string[] = [];
 
   // Helper to create an edge
   const createEdge = (sourceId: string, targetId: string, sourceHandle: string | null = null) => {
     edgesToCreate.push({ source: sourceId, target: targetId, sourceHandle });
+  };
+
+  // Helper to connect all triggers to a target node
+  const connectTriggersToNode = (targetNodeId: string) => {
+    triggerNodes.forEach(triggerNodeId => {
+      createEdge(triggerNodeId, targetNodeId);
+    });
   };
 
   // Create trigger nodes
@@ -143,7 +153,7 @@ export function convertAutomationConfigToNodes(config: any): {
       nodesToCreate.push({
         id: nodeId,
         type: 'trigger',
-        position: { x: xOffset, y: baseYOffset },
+        position: { x: xOffset, y: baseYOffset + (index * 120) }, // Stack triggers vertically
         data: {
           ...trigger, // Spread all original properties first
           alias: trigger.alias || `Trigger ${index + 1}`, // Only override alias if not present
@@ -151,14 +161,10 @@ export function convertAutomationConfigToNodes(config: any): {
         },
       });
 
-      // Connect to previous node if exists
-      if (previousNodeId) {
-        createEdge(previousNodeId, nodeId);
-      }
-      previousNodeId = nodeId;
-
-      xOffset += nodeSpacing;
+      triggerNodes.push(nodeId);
     }
+    
+    xOffset += nodeSpacing;
   }
 
   // Create condition nodes (top-level conditions)
@@ -184,8 +190,10 @@ export function convertAutomationConfigToNodes(config: any): {
         },
       });
 
-      // Connect to previous node if exists - use 'true' for top-level conditions (AND logic)
-      if (previousNodeId) {
+      // Connect all triggers to first condition, or previous condition to this one
+      if (index === 0 && triggerNodes.length > 0) {
+        connectTriggersToNode(nodeId);
+      } else if (previousNodeId) {
         const sourceHandle = nodesToCreate.find(n => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
         createEdge(previousNodeId, nodeId, sourceHandle);
       }
@@ -287,6 +295,10 @@ export function convertAutomationConfigToNodes(config: any): {
       else if (previousNodeId) {
         const sourceHandle = nodesToCreate.find(n => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
         createEdge(previousNodeId, nodeId, sourceHandle);
+      }
+      // If no previous node and it's the first action, connect all triggers to it
+      else if (index === 0 && triggerNodes.length > 0 && !parentConditionId) {
+        connectTriggersToNode(nodeId);
       }
 
       previousNodeId = nodeId;
