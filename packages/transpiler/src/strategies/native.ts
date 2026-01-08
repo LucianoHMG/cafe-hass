@@ -92,16 +92,16 @@ export class NativeStrategy extends BaseStrategy {
    * Build a single trigger configuration
    */
   private buildTrigger(node: TriggerNode): Record<string, unknown> {
-    const trigger: Record<string, unknown> = {
-      platform: node.data.platform,
-    };
+    // Start with all the original data
+    const trigger: Record<string, unknown> = { ...node.data };
 
-    // Add platform-specific fields
-    const { alias, platform, ...rest } = node.data;
-    Object.assign(trigger, rest);
-
-    if (alias) {
-      trigger.alias = alias;
+    // Ensure platform is set (this might have been derived during import)
+    if (!trigger.platform && trigger.trigger) {
+      trigger.platform = trigger.trigger as string;
+    } else if (!trigger.platform && trigger.domain) {
+      trigger.platform = trigger.domain as string;
+    } else if (!trigger.platform) {
+      trigger.platform = 'device';
     }
 
     // Clean up undefined/empty values

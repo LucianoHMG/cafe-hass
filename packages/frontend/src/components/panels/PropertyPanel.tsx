@@ -1,5 +1,5 @@
-import { Trash2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { Trash2, Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EntitySelector } from '@/components/ui/EntitySelector';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,12 @@ export function PropertyPanel() {
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
   const removeNode = useFlowStore((s) => s.removeNode);
   const { hass, entities, getAllServices, getServiceDefinition } = useHass();
+  
+  // State for adding new properties
+  const [newPropertyKey, setNewPropertyKey] = useState('');
+  const [newPropertyValue, setNewPropertyValue] = useState('');
+  const [newPropertyType, setNewPropertyType] = useState<'string' | 'number' | 'boolean' | 'array'>('string');
+  const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Use entities from hass object directly
   const effectiveEntities = useMemo(() => {
@@ -59,45 +65,9 @@ export function PropertyPanel() {
     updateNodeData(selectedNode.id, { [key]: value });
   };
 
-  // Handle platform change - clear fields that don't apply to the new platform
+  // Handle platform change - preserve existing properties but allow platform to be updated
   const handlePlatformChange = (newPlatform: string) => {
-    const currentData = selectedNode.data as Record<string, unknown>;
-
-    // Build new data with only the alias and platform
-    const newData: Record<string, unknown> = {
-      alias: currentData.alias,
-      platform: newPlatform,
-    };
-
-    // Clear all other fields by setting them to undefined
-    const allPossibleFields = [
-      'entity_id',
-      'to',
-      'from',
-      'for',
-      'at',
-      'event_type',
-      'event_data',
-      'event',
-      'offset',
-      'above',
-      'below',
-      'value_template',
-      'template',
-      'webhook_id',
-      'zone',
-      'topic',
-      'payload',
-      'hours',
-      'minutes',
-      'seconds',
-    ];
-
-    for (const field of allPossibleFields) {
-      newData[field] = undefined;
-    }
-
-    updateNodeData(selectedNode.id, newData);
+    updateNodeData(selectedNode.id, { platform: newPlatform });
   };
 
   const triggerPlatform =
@@ -110,6 +80,51 @@ export function PropertyPanel() {
     updateNodeData(selectedNode.id, {
       [parent]: { ...(parentData as Record<string, unknown>), [key]: value },
     });
+  };
+
+  const handleAddProperty = () => {
+    if (!newPropertyKey.trim() || !selectedNode) return;
+    
+    let value: unknown = newPropertyValue;
+    
+    // Convert value based on type
+    switch (newPropertyType) {
+      case 'number':
+        value = Number(newPropertyValue);
+        if (isNaN(value as number)) {
+          alert('Invalid number value');
+          return;
+        }
+        break;
+      case 'boolean':
+        value = newPropertyValue.toLowerCase() === 'true';
+        break;
+      case 'array':
+        try {
+          value = JSON.parse(newPropertyValue);
+          if (!Array.isArray(value)) {
+            throw new Error('Not an array');
+          }
+        } catch {
+          alert('Invalid JSON array format');
+          return;
+        }
+        break;
+      default:
+        value = newPropertyValue;
+    }
+    
+    handleChange(newPropertyKey, value);
+    
+    // Reset form
+    setNewPropertyKey('');
+    setNewPropertyValue('');
+    setNewPropertyType('string');
+    setIsAddingProperty(false);
+  };
+
+  const handleDeleteProperty = (key: string) => {
+    updateNodeData(selectedNode.id, { [key]: undefined });
   };
 
   return (
@@ -161,6 +176,7 @@ export function PropertyPanel() {
                 <SelectItem value="sun">Sun</SelectItem>
                 <SelectItem value="event">Event</SelectItem>
                 <SelectItem value="template">Template</SelectItem>
+                <SelectItem value="device">Device</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -791,6 +807,219 @@ export function PropertyPanel() {
           </div>
         </>
       )}
+
+      {/* General Properties Section */}
+      {(() => {
+        const data = selectedNode.data as Record<string, unknown>;
+        
+        // Define properties that are handled by specific UI sections above
+        const handledProperties = new Set([
+          'alias', // Always handled
+          // Trigger properties handled by specific UI
+          'platform', 'entity_id', 'to', 'from', 'for', 'at', 'event_type', 'event_data',
+          'event', 'offset', 'above', 'below', 'value_template', 'template', 'webhook_id',
+          'zone', 'topic', 'payload', 'hours', 'minutes', 'seconds',
+          // Condition properties handled by specific UI
+          'condition_type', 'state', 'attribute', 'above', 'below', 'value_template', 'after', 
+          'before', 'weekday', 'device_id', 'domain', 'type', 'entity_id',
+          // Action properties handled by specific UI
+          'service', 'data', 'target',
+          // Delay properties
+          'delay',
+          // Wait properties
+          'wait_template', 'timeout',
+          // Internal properties
+          '_conditionId'
+        ]);
+        
+        // Get unhandled properties
+        const unhandledProperties = Object.entries(data)
+          .filter(([key, value]) => 
+            !handledProperties.has(key) && 
+            value !== undefined && 
+            value !== null && 
+            value !== ''
+          );
+        
+        if (unhandledProperties.length === 0) return null;
+        
+        return (
+          <div className="space-y-3">
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium text-muted-foreground text-xs">Additional Properties</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingProperty(true)}
+                  className="h-6 px-2 text-xs"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add
+                </Button>
+              </div>
+            </div>
+            
+            {/* Add new property form */}
+            {isAddingProperty && (
+              <div className="space-y-2 rounded border p-3">
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">Property Name</Label>
+                  <Input
+                    type="text"
+                    value={newPropertyKey}
+                    onChange={(e) => setNewPropertyKey(e.target.value)}
+                    placeholder="e.g., my_custom_property"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">Type</Label>
+                  <Select value={newPropertyType} onValueChange={(value: any) => setNewPropertyType(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="string">Text</SelectItem>
+                      <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="boolean">Boolean</SelectItem>
+                      <SelectItem value="array">Array (JSON)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="font-medium text-muted-foreground text-xs">Value</Label>
+                  {newPropertyType === 'boolean' ? (
+                    <Select value={newPropertyValue || 'false'} onValueChange={setNewPropertyValue}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">True</SelectItem>
+                        <SelectItem value="false">False</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : newPropertyType === 'array' ? (
+                    <Textarea
+                      value={newPropertyValue}
+                      onChange={(e) => setNewPropertyValue(e.target.value)}
+                      placeholder='["item1", "item2"]'
+                      className="font-mono"
+                      rows={2}
+                    />
+                  ) : (
+                    <Input
+                      type={newPropertyType === 'number' ? 'number' : 'text'}
+                      value={newPropertyValue}
+                      onChange={(e) => setNewPropertyValue(e.target.value)}
+                      placeholder={newPropertyType === 'number' ? '123' : 'Enter value'}
+                    />
+                  )}
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsAddingProperty(false);
+                      setNewPropertyKey('');
+                      setNewPropertyValue('');
+                      setNewPropertyType('string');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleAddProperty}>
+                    Add Property
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {unhandledProperties.map(([key, value]) => (
+              <div key={key} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium text-muted-foreground text-xs capitalize">
+                    {key.replace(/_/g, ' ')}
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteProperty(key)}
+                    className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                {typeof value === 'boolean' ? (
+                  <Select
+                    value={value ? 'true' : 'false'}
+                    onValueChange={(val) => handleChange(key, val === 'true')}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">True</SelectItem>
+                      <SelectItem value="false">False</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : Array.isArray(value) ? (
+                  <Textarea
+                    value={JSON.stringify(value, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const parsed = JSON.parse(e.target.value);
+                        handleChange(key, parsed);
+                      } catch {
+                        // Invalid JSON, don't update
+                      }
+                    }}
+                    className="font-mono"
+                    rows={Math.min(value.length + 1, 4)}
+                    placeholder="JSON array"
+                  />
+                ) : typeof value === 'object' ? (
+                  <Textarea
+                    value={JSON.stringify(value, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const parsed = JSON.parse(e.target.value);
+                        handleChange(key, parsed);
+                      } catch {
+                        // Invalid JSON, don't update
+                      }
+                    }}
+                    className="font-mono"
+                    rows={4}
+                    placeholder="JSON object"
+                  />
+                ) : (
+                  <Input
+                    type="text"
+                    value={String(value)}
+                    onChange={(e) => {
+                      // Try to preserve the original type
+                      const newValue = e.target.value;
+                      if (typeof value === 'number') {
+                        const num = Number(newValue);
+                        if (!isNaN(num)) {
+                          handleChange(key, num);
+                        }
+                      } else {
+                        handleChange(key, newValue);
+                      }
+                    }}
+                    placeholder={`Enter ${typeof value}`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="pt-2 text-muted-foreground text-xs">Node ID: {selectedNode.id}</div>
     </div>

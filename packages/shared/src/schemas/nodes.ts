@@ -58,7 +58,7 @@ export const TriggerDataSchema = z.object({
   // MQTT trigger
   topic: z.string().optional(),
   payload: z.string().optional(),
-});
+}).passthrough(); // Allow additional properties to be preserved
 export type TriggerData = z.infer<typeof TriggerDataSchema>;
 
 export const TriggerNodeSchema = z.object({

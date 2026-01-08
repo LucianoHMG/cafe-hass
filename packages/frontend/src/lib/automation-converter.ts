@@ -139,13 +139,9 @@ export function convertAutomationConfigToNodes(config: any): {
         type: 'trigger',
         position: { x: xOffset, y: yOffset },
         data: {
-          alias: trigger.alias || `Trigger ${index + 1}`,
-          platform: trigger.platform || trigger.trigger || trigger.domain || 'device',
-          entity_id: trigger.entity_id,
-          to: trigger.to,
-          from: trigger.from,
-          event_type: trigger.event_type,
-          ...trigger,
+          ...trigger, // Spread all original properties first
+          alias: trigger.alias || `Trigger ${index + 1}`, // Only override alias if not present
+          platform: trigger.platform || trigger.trigger || trigger.domain || 'device', // Ensure platform is set
         },
       });
 
