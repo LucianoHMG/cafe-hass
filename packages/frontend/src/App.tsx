@@ -8,6 +8,7 @@ import {
   FileUp,
   Info,
   Loader2,
+  Save,
   Settings,
   Wifi,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ import { Toaster } from 'sonner';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { FlowCanvas } from '@/components/canvas/FlowCanvas';
 import { AutomationImportDialog } from '@/components/panels/AutomationImportDialog';
+import { AutomationSaveDialog } from '@/components/panels/AutomationSaveDialog';
 import { HassSettings } from '@/components/panels/HassSettings';
 import { ImportYamlDialog } from '@/components/panels/ImportYamlDialog';
 import { NodePalette } from '@/components/panels/NodePalette';
@@ -59,30 +61,47 @@ interface AppProps {
 type RightPanelTab = 'properties' | 'yaml' | 'simulator';
 
 function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}) {
-  const { isStandalone, isRemote, isLoading, connectionError, config, setConfig } = useHass();
+  const {
+    hass: hookHass,
+    isStandalone,
+    isRemote,
+    isLoading,
+    connectionError,
+    config,
+    setConfig,
+  } = useHass();
 
   // Use external hass if provided (from HA), otherwise use hook
-  const effectiveHass = externalHass || (isStandalone ? null : undefined);
+  const effectiveHass = externalHass || hookHass;
 
   // Initialize or update the API instance with current hass
   useEffect(() => {
     if (effectiveHass) {
+      // Set the global hass instance for use by the store
+      import('@/hooks/useHass').then(({ setGlobalHass }) => {
+        setGlobalHass(effectiveHass);
+      });
+
       const api = getHomeAssistantAPI(effectiveHass);
-      console.log('C.A.F.E. App: API initialized with hass data, connected:', api.isConnected());
     }
   }, [effectiveHass]);
 
-  console.log(
-    'C.A.F.E. App: Using hass data:',
-    !!effectiveHass,
-    effectiveHass?.states ? Object.keys(effectiveHass.states).length : 0
-  );
-  const { flowName, setFlowName, toFlowGraph, fromFlowGraph, reset } = useFlowStore();
+  const {
+    flowName,
+    setFlowName,
+    toFlowGraph,
+    fromFlowGraph,
+    reset,
+    automationId,
+    hasUnsavedChanges,
+    isSaving,
+  } = useFlowStore();
   const [rightTab, setRightTab] = useState<RightPanelTab>('properties');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importYamlOpen, setImportYamlOpen] = useState(false);
   const [automationImportOpen, setAutomationImportOpen] = useState(false);
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   const handleExport = () => {
     const graph = toFlowGraph();
@@ -234,6 +253,24 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
               </div>
 
               <Button
+                onClick={() => setSaveDialogOpen(true)}
+                variant={hasUnsavedChanges ? 'default' : 'ghost'}
+                size="icon"
+                title={
+                  automationId
+                    ? 'Update automation in Home Assistant'
+                    : 'Save automation to Home Assistant'
+                }
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-5 w-5" />
+                )}
+              </Button>
+
+              <Button
                 onClick={handleExport}
                 variant="ghost"
                 size="icon"
@@ -335,6 +372,16 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
             setAutomationImportOpen(false);
           }}
         />
+
+        {/* Save Automation dialog */}
+        <AutomationSaveDialog
+          isOpen={saveDialogOpen}
+          onClose={() => setSaveDialogOpen(false)}
+          onSaved={(automationId) => {
+
+          }}
+        />
+
         <Toaster />
       </ReactFlowProvider>
     </HassContext.Provider>

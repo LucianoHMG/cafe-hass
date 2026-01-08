@@ -8,9 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { processActions, convertAutomationConfigToNodes } from '@/lib/automation-converter';
 
 describe('automation-converter', () => {
-
   describe('processActions helper', () => {
-
     it('should handle simple action list', () => {
       const actions = [
         { action: 'light.turn_on', target: { entity_id: 'light.living_room' } },
@@ -434,7 +432,10 @@ describe('automation-converter', () => {
                 metadata: {},
                 data: {},
                 target: {
-                  entity_id: ['light.libreria_destra_soggiorno', 'light.libreria_sinistra_soggiorno'],
+                  entity_id: [
+                    'light.libreria_destra_soggiorno',
+                    'light.libreria_sinistra_soggiorno',
+                  ],
                 },
               },
             ],
@@ -444,7 +445,10 @@ describe('automation-converter', () => {
                 metadata: {},
                 data: {},
                 target: {
-                  entity_id: ['light.libreria_destra_soggiorno', 'light.libreria_sinistra_soggiorno'],
+                  entity_id: [
+                    'light.libreria_destra_soggiorno',
+                    'light.libreria_sinistra_soggiorno',
+                  ],
                 },
               },
             ],

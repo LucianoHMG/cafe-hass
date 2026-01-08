@@ -1,11 +1,13 @@
 # Automation Import/Export Test Framework
 
 ## Overview
+
 A comprehensive test framework for validating roundtrip data integrity between Home Assistant YAML automations and the visual flow editor.
 
 ## Test Results Summary
 
 ### ✅ Passing Tests (5/6)
+
 1. **01-simple-trigger-action.yaml** ✅ - Basic trigger → action flow
 2. **02-knx-complex.yaml** ✅ - Complex KNX device automation with if/then/else
 3. **03-multiple-conditions.yaml** ✅ - Multiple top-level conditions with choose structures
@@ -13,11 +15,13 @@ A comprehensive test framework for validating roundtrip data integrity between H
 5. **05-delays-and-waits.yaml** ✅ - Sequential actions with delays and wait conditions
 
 ### ❌ Known Issues (1/6)
+
 6. **06-multiple-triggers.yaml** ❌ - Multiple triggers (transpiler limitation)
 
 ## Framework Features
 
 ### Test Structure
+
 - **Fixtures Directory**: `src/lib/__tests__/fixtures/` - Contains YAML test cases
 - **Automated Testing**: Discovers all YAML files and runs roundtrip tests
 - **Comprehensive Validation**: Tests nodes, edges, data preservation, and visual layout
@@ -25,16 +29,19 @@ A comprehensive test framework for validating roundtrip data integrity between H
 ### What Gets Tested
 
 #### Node Generation
+
 - ✅ Correct node types (trigger, condition, action, delay, wait)
 - ✅ Proper positioning with branch offsets
 - ✅ Data preservation across conversion
 
 #### Edge Validation
+
 - ✅ Proper sourceHandle values ('true', 'false', null)
 - ✅ Valid connections between nodes
 - ✅ No orphaned nodes
 
 #### Data Integrity
+
 - ✅ Alias preservation
 - ✅ Service configurations
 - ✅ Target entity preservation
@@ -42,6 +49,7 @@ A comprehensive test framework for validating roundtrip data integrity between H
 - ✅ Mode and execution settings
 
 #### YAML Roundtrip
+
 - ✅ Valid YAML output
 - ✅ CAFE metadata injection
 - ✅ Functional automation structure
@@ -49,6 +57,7 @@ A comprehensive test framework for validating roundtrip data integrity between H
 ## Key Achievements
 
 ### Fixed Issues Through Testing
+
 1. **sourceHandle Bug**: Fixed undefined sourceHandle values for condition nodes
 2. **Top-level Conditions**: Properly connected with 'true' sourceHandle (AND logic)
 3. **Choose Structures**: Correct 'true'/'false' branching
@@ -56,6 +65,7 @@ A comprehensive test framework for validating roundtrip data integrity between H
 5. **Property Preservation**: Complex device properties like KNX configurations
 
 ### Visual Improvements
+
 - **Vertical Branch Offset**: 150px separation between then/else branches
 - **Sequential Layout**: Proper horizontal progression of nodes
 - **Node Type Detection**: Automatic detection of delay, wait, action types

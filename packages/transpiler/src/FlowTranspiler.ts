@@ -131,7 +131,7 @@ export class FlowTranspiler {
     const output = strategy.generate(flow, analysis);
     warnings.push(...output.warnings);
 
-    // Step 5: Inject _flow_automator metadata with node positions
+    // Step 5: Inject _cafe_metadata metadata with node positions
     const yamlContent = output.automation ?? output.script;
     let yaml: string;
 
@@ -141,7 +141,7 @@ export class FlowTranspiler {
         ...yamlContent,
         variables: {
           ...(yamlContent.variables || {}),
-          _flow_automator: metadata,
+          _cafe_metadata: metadata,
         },
       };
 

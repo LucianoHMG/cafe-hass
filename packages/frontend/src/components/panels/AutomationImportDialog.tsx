@@ -43,18 +43,12 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
   // Get all automations from HA
   const automations = useMemo(() => {
     if (!hass?.states) {
-      console.log('C.A.F.E.: No hass.states available');
       return [];
     }
 
-    console.log('C.A.F.E.: Total entities in hass.states:', Object.keys(hass.states).length);
-    console.log('C.A.F.E.: Sample entity keys:', Object.keys(hass.states).slice(0, 10));
-    
-    const automationEntities = Object.values(hass.states)
-      .filter((entity: any) => entity.entity_id.startsWith('automation.'));
-    
-    console.log('C.A.F.E.: Found automation entities:', automationEntities.length);
-    console.log('C.A.F.E.: Automation entity IDs:', automationEntities.map((e: any) => e.entity_id));
+    const automationEntities = Object.values(hass.states).filter((entity: any) =>
+      entity.entity_id.startsWith('automation.')
+    );
 
     return automationEntities.map((entity: any) => ({
       entity_id: entity.entity_id,
@@ -78,14 +72,9 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
 
   const handleImportAutomation = async (automation: HaAutomation) => {
     try {
-      console.log('C.A.F.E.: Opening automation:', automation.entity_id);
-      console.log('C.A.F.E.: Automation attributes:', automation.attributes);
-
       // Try to get the numeric ID from attributes, fallback to entity_id without prefix
-      const automationId = automation.attributes.id
-        || automation.entity_id.replace('automation.', '');
-
-      console.log('C.A.F.E.: Using automation ID:', automationId);
+      const automationId =
+        automation.attributes.id || automation.entity_id.replace('automation.', '');
 
       // Get API instance and update with current hass and config
       const api = getHomeAssistantAPI(hass, hassConfig);
@@ -100,23 +89,12 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         automation.attributes.friendly_name
       );
 
-      console.log('C.A.F.E.: ====================================');
-      console.log('C.A.F.E.: AUTOMATION CONFIG RETRIEVED');
-      console.log('C.A.F.E.: ====================================');
-      console.log('C.A.F.E.: Automation Entity ID:', automation.entity_id);
-      console.log('C.A.F.E.: Automation Numeric ID:', automationId);
-      console.log('C.A.F.E.: Automation Name:', automation.attributes.friendly_name);
-      console.log('C.A.F.E.: Config:', config);
-      console.log('C.A.F.E.: Full Config JSON:', JSON.stringify(config, null, 2));
-      console.log('C.A.F.E.: ====================================');
-
       // Reset current flow and set name
       reset();
       setFlowName(automation.attributes.friendly_name || automationId);
 
       if (config) {
         // Convert automation config to visual nodes
-        console.log('C.A.F.E.: Converting automation config to nodes:', config);
 
         const { nodes, edges } = convertAutomationConfigToNodes(config);
         const { addNode, onConnect } = useFlowStore.getState();
@@ -136,8 +114,6 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
           });
         }
 
-        console.log('C.A.F.E.: Automation nodes created successfully');
-
         toast.success(
           `Automation "${automation.attributes.friendly_name || automationId}" imported successfully!`
         );
@@ -145,7 +121,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
         toast.warning(
           `Automation "${automation.attributes.friendly_name || automationId}" opened!`,
           {
-            description: 'Could not fetch configuration automatically. You can now create a new flow with the same name.'
+            description:
+              'Could not fetch configuration automatically. You can now create a new flow with the same name.',
           }
         );
       }

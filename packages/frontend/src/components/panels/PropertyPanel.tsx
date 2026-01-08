@@ -21,11 +21,13 @@ export function PropertyPanel() {
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
   const removeNode = useFlowStore((s) => s.removeNode);
   const { hass, entities, getAllServices, getServiceDefinition } = useHass();
-  
+
   // State for adding new properties
   const [newPropertyKey, setNewPropertyKey] = useState('');
   const [newPropertyValue, setNewPropertyValue] = useState('');
-  const [newPropertyType, setNewPropertyType] = useState<'string' | 'number' | 'boolean' | 'array'>('string');
+  const [newPropertyType, setNewPropertyType] = useState<'string' | 'number' | 'boolean' | 'array'>(
+    'string'
+  );
   const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Use entities from hass object directly
@@ -41,12 +43,6 @@ export function PropertyPanel() {
     }
     return entities;
   }, [hass, entities]);
-
-  console.log(
-    'C.A.F.E. PropertyPanel: Using entities:',
-    effectiveEntities.length,
-    'from hass object'
-  );
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId),
@@ -84,9 +80,9 @@ export function PropertyPanel() {
 
   const handleAddProperty = () => {
     if (!newPropertyKey.trim() || !selectedNode) return;
-    
+
     let value: unknown = newPropertyValue;
-    
+
     // Convert value based on type
     switch (newPropertyType) {
       case 'number':
@@ -113,9 +109,9 @@ export function PropertyPanel() {
       default:
         value = newPropertyValue;
     }
-    
+
     handleChange(newPropertyKey, value);
-    
+
     // Reset form
     setNewPropertyKey('');
     setNewPropertyValue('');
@@ -811,43 +807,75 @@ export function PropertyPanel() {
       {/* General Properties Section */}
       {(() => {
         const data = selectedNode.data as Record<string, unknown>;
-        
+
         // Define properties that are handled by specific UI sections above
         const handledProperties = new Set([
           'alias', // Always handled
           // Trigger properties handled by specific UI
-          'platform', 'entity_id', 'to', 'from', 'for', 'at', 'event_type', 'event_data',
-          'event', 'offset', 'above', 'below', 'value_template', 'template', 'webhook_id',
-          'zone', 'topic', 'payload', 'hours', 'minutes', 'seconds',
+          'platform',
+          'entity_id',
+          'to',
+          'from',
+          'for',
+          'at',
+          'event_type',
+          'event_data',
+          'event',
+          'offset',
+          'above',
+          'below',
+          'value_template',
+          'template',
+          'webhook_id',
+          'zone',
+          'topic',
+          'payload',
+          'hours',
+          'minutes',
+          'seconds',
           // Condition properties handled by specific UI
-          'condition_type', 'state', 'attribute', 'above', 'below', 'value_template', 'after', 
-          'before', 'weekday', 'device_id', 'domain', 'type', 'entity_id', 'condition',
+          'condition_type',
+          'state',
+          'attribute',
+          'above',
+          'below',
+          'value_template',
+          'after',
+          'before',
+          'weekday',
+          'device_id',
+          'domain',
+          'type',
+          'entity_id',
+          'condition',
           // Action properties handled by specific UI
-          'service', 'data', 'target',
+          'service',
+          'data',
+          'target',
           // Delay properties
           'delay',
           // Wait properties
-          'wait_template', 'timeout',
+          'wait_template',
+          'timeout',
           // Internal properties
-          '_conditionId'
+          '_conditionId',
         ]);
-        
+
         // Get unhandled properties
-        const unhandledProperties = Object.entries(data)
-          .filter(([key, value]) => 
-            !handledProperties.has(key) && 
-            value !== undefined && 
-            value !== null && 
-            value !== ''
-          );
-        
+        const unhandledProperties = Object.entries(data).filter(
+          ([key, value]) =>
+            !handledProperties.has(key) && value !== undefined && value !== null && value !== ''
+        );
+
         if (unhandledProperties.length === 0) return null;
-        
+
         return (
           <div className="space-y-3">
             <div className="border-t pt-3">
               <div className="flex items-center justify-between">
-                <Label className="font-medium text-muted-foreground text-xs">Additional Properties</Label>
+                <Label className="font-medium text-muted-foreground text-xs">
+                  Additional Properties
+                </Label>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -859,7 +887,7 @@ export function PropertyPanel() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Add new property form */}
             {isAddingProperty && (
               <div className="space-y-2 rounded border p-3">
@@ -872,10 +900,13 @@ export function PropertyPanel() {
                     placeholder="e.g., my_custom_property"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="font-medium text-muted-foreground text-xs">Type</Label>
-                  <Select value={newPropertyType} onValueChange={(value: any) => setNewPropertyType(value)}>
+                  <Select
+                    value={newPropertyType}
+                    onValueChange={(value: any) => setNewPropertyType(value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -887,7 +918,7 @@ export function PropertyPanel() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="font-medium text-muted-foreground text-xs">Value</Label>
                   {newPropertyType === 'boolean' ? (
@@ -917,7 +948,7 @@ export function PropertyPanel() {
                     />
                   )}
                 </div>
-                
+
                 <div className="flex justify-end gap-2">
                   <Button
                     variant="ghost"
@@ -937,7 +968,7 @@ export function PropertyPanel() {
                 </div>
               </div>
             )}
-            
+
             {unhandledProperties.map(([key, value]) => (
               <div key={key} className="space-y-2">
                 <div className="flex items-center justify-between">

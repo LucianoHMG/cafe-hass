@@ -65,12 +65,12 @@ export function processActions(
     else if (action.choose) {
       // Process each choice as a separate condition
       let lastConditionId: string | undefined;
-      
+
       for (const choice of action.choose) {
         if (choice.conditions) {
           const conditionId = `condition-${Date.now()}-${Math.random()}`;
           lastConditionId = conditionId;
-          
+
           processed.push({
             action: {
               type: 'condition',
@@ -116,15 +116,33 @@ export function convertAutomationConfigToNodes(config: any): {
   const nodesToCreate: NodeToCreate[] = [];
   const edgesToCreate: Array<{ source: string; target: string; sourceHandle: string | null }> = [];
 
+  // Check for CAFE metadata for node positions - use existing transpiler metadata
+  const cafeMetadata = config.variables?.cafe_metadata;
+  const transpilerMetadata = config.variables?._cafe_metadata;
+  const savedPositions = cafeMetadata?.node_positions || transpilerMetadata?.nodes || {};
+  const nodeMapping = cafeMetadata?.node_mapping || {};
+
+
   let xOffset = 100;
   const baseYOffset = 100;
   const nodeSpacing = 300;
   const branchYOffset = 150; // Vertical spacing between branches
   let previousNodeId: string | null = null;
 
+  // Helper to get position for a node (use saved position if available, otherwise calculate)
+  const getNodePosition = (nodeId: string, defaultX: number, defaultY: number) => {
+    if (savedPositions[nodeId]) {
+      const pos = savedPositions[nodeId];
+      const x = pos.x !== undefined ? pos.x : pos;
+      const y = pos.y !== undefined ? pos.y : pos;
+      return { x: Number(x), y: Number(y) };
+    }
+    return { x: defaultX, y: defaultY };
+  };
+
   // Track condition nodes and their children for proper sourceHandle assignment
   const conditionChildrenMap = new Map<string, { thenChild?: string; elseChild?: string }>();
-  
+
   // Store trigger nodes for multi-trigger connections
   const triggerNodes: string[] = [];
 
@@ -135,7 +153,7 @@ export function convertAutomationConfigToNodes(config: any): {
 
   // Helper to connect all triggers to a target node
   const connectTriggersToNode = (targetNodeId: string) => {
-    triggerNodes.forEach(triggerNodeId => {
+    triggerNodes.forEach((triggerNodeId) => {
       createEdge(triggerNodeId, targetNodeId);
     });
   };
@@ -149,11 +167,25 @@ export function convertAutomationConfigToNodes(config: any): {
         : [config.trigger];
 
     for (const [index, trigger] of triggers.entries()) {
-      const nodeId = `trigger-${Date.now()}-${index}`;
+      // First try to find exact match in transpiler metadata
+      let nodeId;
+      if (transpilerMetadata?.nodes) {
+        const triggerKeys = Object.keys(transpilerMetadata.nodes).filter(key => key.startsWith('trigger-'));
+        nodeId = triggerKeys[index];
+      }
+      
+      // Fallback to mapping or generate new ID
+      if (!nodeId) {
+        const mappingKey = `trigger-${index}`;
+        nodeId = nodeMapping[mappingKey] || `trigger_${Date.now()}_${index}`;
+      }
+      
+      const defaultPosition = { x: xOffset, y: baseYOffset + index * 120 };
+      
       nodesToCreate.push({
         id: nodeId,
         type: 'trigger',
-        position: { x: xOffset, y: baseYOffset + (index * 120) }, // Stack triggers vertically
+        position: getNodePosition(nodeId, defaultPosition.x, defaultPosition.y),
         data: {
           ...trigger, // Spread all original properties first
           alias: trigger.alias || `Trigger ${index + 1}`, // Only override alias if not present
@@ -163,7 +195,7 @@ export function convertAutomationConfigToNodes(config: any): {
 
       triggerNodes.push(nodeId);
     }
-    
+
     xOffset += nodeSpacing;
   }
 
@@ -176,11 +208,14 @@ export function convertAutomationConfigToNodes(config: any): {
         : [config.condition];
 
     for (const [index, condition] of conditions.entries()) {
-      const nodeId = `condition-${Date.now()}-${index}`;
+      const mappingKey = `condition-${index}`;
+      const originalId = nodeMapping[mappingKey];
+      const nodeId = originalId || `condition-${Date.now()}-${index}`;
+      
       nodesToCreate.push({
         id: nodeId,
         type: 'condition',
-        position: { x: xOffset, y: baseYOffset },
+        position: getNodePosition(nodeId, xOffset, baseYOffset),
         data: {
           alias: condition.alias || `Condition ${index + 1}`,
           condition_type: condition.condition || condition.platform || 'unknown',
@@ -194,7 +229,8 @@ export function convertAutomationConfigToNodes(config: any): {
       if (index === 0 && triggerNodes.length > 0) {
         connectTriggersToNode(nodeId);
       } else if (previousNodeId) {
-        const sourceHandle = nodesToCreate.find(n => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
+        const sourceHandle =
+          nodesToCreate.find((n) => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
         createEdge(previousNodeId, nodeId, sourceHandle);
       }
       previousNodeId = nodeId;
@@ -214,13 +250,27 @@ export function convertAutomationConfigToNodes(config: any): {
     const processedActions = processActions(actions);
 
     // Check if there are both 'then' and 'else' branches to determine if vertical offset should be applied
-    const hasThenBranch = processedActions.some(action => action.branch === 'then');
-    const hasElseBranch = processedActions.some(action => action.branch === 'else');
+    const hasThenBranch = processedActions.some((action) => action.branch === 'then');
+    const hasElseBranch = processedActions.some((action) => action.branch === 'else');
     const shouldApplyVerticalOffset = hasThenBranch && hasElseBranch;
 
     for (const [index, processedAction] of processedActions.entries()) {
       const { action, branch, parentConditionId } = processedAction;
-      const nodeId = action._conditionId || `action-${Date.now()}-${index}`;
+      
+      let nodeId = action._conditionId;
+      if (!nodeId) {
+        // Try to find exact match in transpiler metadata
+        if (transpilerMetadata?.nodes) {
+          const actionKeys = Object.keys(transpilerMetadata.nodes).filter(key => key.startsWith('action-'));
+          nodeId = actionKeys[index];
+        }
+        
+        // Fallback to mapping or generate new ID
+        if (!nodeId) {
+          const mappingKey = `action-${index}`;
+          nodeId = nodeMapping[mappingKey] || `action_${Date.now()}_${index}`;
+        }
+      }
 
       // Determine node type based on action
       let nodeType = 'action';
@@ -249,7 +299,7 @@ export function convertAutomationConfigToNodes(config: any): {
         nodesToCreate.push({
           id: nodeId,
           type: 'condition',
-          position: { x: xOffset, y: yPosition },
+          position: getNodePosition(nodeId, xOffset, yPosition),
           data: {
             alias: action.alias || `Condition ${index + 1}`,
             condition_type:
@@ -272,11 +322,11 @@ export function convertAutomationConfigToNodes(config: any): {
         } else if (action.wait_template || action.wait_for_trigger) {
           service = 'wait';
         }
-        
+
         nodesToCreate.push({
           id: nodeId,
           type: nodeType,
-          position: { x: xOffset, y: yPosition },
+          position: getNodePosition(nodeId, xOffset, yPosition),
           data: {
             alias: action.alias || `Action ${index + 1}`,
             service: service,
@@ -307,7 +357,8 @@ export function convertAutomationConfigToNodes(config: any): {
       }
       // Connect to previous node sequentially (only if not already connected to a condition)
       else if (previousNodeId) {
-        const sourceHandle = nodesToCreate.find(n => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
+        const sourceHandle =
+          nodesToCreate.find((n) => n.id === previousNodeId)?.type === 'condition' ? 'true' : null;
         createEdge(previousNodeId, nodeId, sourceHandle);
       }
       // If no previous node and it's the first action, connect all triggers to it

@@ -5,10 +5,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-console.log('C.A.F.E.: main.tsx loading...');
-console.log('C.A.F.E.: window.location:', window.location.href);
-console.log('C.A.F.E.: document.getElementById("root"):', document.getElementById('root'));
-
 // Create a web component for Home Assistant panel integration
 class CafePanel extends HTMLElement {
   private root: ReactDOM.Root | null = null;
@@ -56,10 +52,6 @@ class CafePanel extends HTMLElement {
   }
 
   connectedCallback() {
-    console.log('C.A.F.E.: CafePanel connectedCallback');
-    console.log('C.A.F.E.: Shadow DOM check - this.shadowRoot:', this.shadowRoot);
-    console.log('C.A.F.E.: Parent elements:', this.parentElement, this.parentElement?.shadowRoot);
-
     if (!this.root) {
       this.style.display = 'block';
       this.style.width = '100%';
@@ -71,7 +63,6 @@ class CafePanel extends HTMLElement {
       // Check if we're inside a shadow DOM and inject CSS accordingly
       this.injectCSSForShadowDOM();
 
-      console.log('C.A.F.E.: Creating React root in custom element');
       this.root = ReactDOM.createRoot(this);
       this.render();
     }
@@ -92,8 +83,6 @@ class CafePanel extends HTMLElement {
     }
 
     if (shadowRoot) {
-      console.log('C.A.F.E.: Detected shadow DOM, injecting CSS directly into shadow root');
-
       // Check if CSS is already injected in shadow DOM
       const existingStyle = shadowRoot.querySelector('style[data-cafe-shadow-styles]');
       if (!existingStyle) {
@@ -109,17 +98,13 @@ class CafePanel extends HTMLElement {
 
         // Inject into shadow root
         shadowRoot.appendChild(shadowStyle);
-        console.log('C.A.F.E.: CSS injected into shadow DOM');
       } else {
-        console.log('C.A.F.E.: CSS already present in shadow DOM');
       }
     } else {
-      console.log('C.A.F.E.: No shadow DOM detected, using document styles');
     }
   }
 
   disconnectedCallback() {
-    console.log('C.A.F.E.: CafePanel disconnectedCallback');
     if (this.root) {
       this.root.unmount();
       this.root = null;
@@ -138,8 +123,6 @@ class CafePanel extends HTMLElement {
 
   render() {
     if (this.root) {
-      console.log('C.A.F.E.: Rendering custom element');
-      console.log('C.A.F.E.: HASS object available:', !!this._hass);
       console.log(
         'C.A.F.E.: HASS entities count:',
         this._hass?.states ? Object.keys(this._hass.states).length : 0
@@ -169,39 +152,29 @@ class CafePanel extends HTMLElement {
         const testElement = this.querySelector('div');
         if (testElement) {
           const computedStyles = window.getComputedStyle(testElement);
-          console.log('C.A.F.E.: Sample computed styles:', {
-            fontFamily: computedStyles.fontFamily,
-            display: computedStyles.display,
-            backgroundColor: computedStyles.backgroundColor,
-            color: computedStyles.color,
-          });
         }
       }, 100);
     }
   }
 }
 
-console.log('C.A.F.E.: Defining custom element cafe-panel');
 // Always define the custom element - HA will use it when needed
 customElements.define('cafe-panel', CafePanel);
 
 // For standalone development (when there's a root element)
 if (typeof document !== 'undefined') {
   const rootElement = document.getElementById('root');
-  console.log('C.A.F.E.: Checking for standalone root element:', rootElement);
+
   if (rootElement) {
-    console.log('C.A.F.E.: Creating React root for standalone development');
     try {
       ReactDOM.createRoot(rootElement).render(
         <React.StrictMode>
           <App />
         </React.StrictMode>
       );
-      console.log('C.A.F.E.: Standalone React root created successfully');
     } catch (error) {
       console.error('C.A.F.E.: Error creating standalone React root:', error);
     }
   } else {
-    console.log('C.A.F.E.: No root element found, running as HA custom element only');
   }
 }

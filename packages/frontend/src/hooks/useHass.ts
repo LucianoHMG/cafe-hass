@@ -97,7 +97,7 @@ export interface HassConfig {
  * Hook to access Home Assistant API
  * Supports three modes:
  * 1. Embedded in HA (uses window.hass)
- * 2. Standalone with token (uses REST API)  
+ * 2. Standalone with token (uses REST API)
  * 3. Standalone without token (empty data)
  */
 export function useHass() {
@@ -122,7 +122,7 @@ export function useHass() {
       customCards?: unknown;
     };
     if (hassWindow.hass) {
-      console.log('C.A.F.E.: HA detected via window.hass');
+      
       return true;
     }
 
@@ -131,7 +131,7 @@ export function useHass() {
       if (window.parent && window.parent !== window) {
         const parentHass = (window.parent as unknown as { hass?: unknown }).hass;
         if (parentHass) {
-          console.log('C.A.F.E.: HA detected via parent iframe window.hass');
+          
           return true;
         }
       }
@@ -144,14 +144,18 @@ export function useHass() {
     const hostname = window.location.hostname;
 
     // If served from /cafe_static/ path, we're likely in HA (but not on localhost dev)
-    if (pathname.includes('/cafe_static/') && !hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-      console.log('C.A.F.E.: HA detected via /cafe_static/ path');
+    if (
+      pathname.includes('/cafe_static/') &&
+      !hostname.includes('localhost') &&
+      !hostname.includes('127.0.0.1')
+    ) {
+      
       return true;
     }
 
     // Check for Home Assistant specific URLs
     if (pathname.startsWith('/api/hassio_ingress/')) {
-      console.log('C.A.F.E.: HA detected via Hassio ingress path');
+      
       return true;
     }
 
@@ -160,13 +164,13 @@ export function useHass() {
       pathname.includes('/local/') &&
       (pathname.includes('/hacs/') || pathname.includes('/community/'))
     ) {
-      console.log('C.A.F.E.: HA detected via HACS local path');
+      
       return true;
     }
 
     // Check if we have specific HA window context
     if (hassWindow.__HA_ADDON__ || hassWindow.hassConnection || hassWindow.customCards) {
-      console.log('C.A.F.E.: HA detected via window context properties');
+      
       return true;
     }
 
@@ -177,16 +181,11 @@ export function useHass() {
       document.querySelector('home-assistant') ||
       document.querySelector('ha-panel-iframe')
     ) {
-      console.log('C.A.F.E.: HA detected via DOM elements');
+      
       return true;
     }
 
-    console.log('C.A.F.E.: No HA detection triggers found', {
-      pathname,
-      hostname,
-      hasWindowHass: !!hassWindow.hass,
-      hasParentAccess: window.parent !== window,
-    });
+    
     return false;
   }, []);
 
@@ -206,7 +205,7 @@ export function useHass() {
       // Auto-configure for current HA instance
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
 
-      console.log('C.A.F.E.: Detected running in Home Assistant, attempting auto-configuration...');
+      
 
       // Try to get auth token from HA context
       try {
@@ -246,7 +245,7 @@ export function useHass() {
               parentHass?.connection?.accessToken ||
               parentHass?.user?.access_token;
           } catch (e) {
-            console.log('C.A.F.E.: Cross-origin access to parent blocked:', e);
+            
           }
         }
 
@@ -264,12 +263,12 @@ export function useHass() {
 
             token = topHass?.auth?.accessToken || topHass?.connection?.accessToken;
           } catch (e) {
-            console.log('C.A.F.E.: Cross-origin access to top window blocked:', e);
+            
           }
         }
 
         if (token) {
-          console.log('C.A.F.E.: Successfully extracted auth token, configuring connection');
+          
           setConfig({ url: baseUrl, token });
           return;
         } else {
@@ -280,9 +279,6 @@ export function useHass() {
       }
 
       // Fallback: Set URL and prompt user for token
-      console.log(
-        'C.A.F.E.: Setting URL without token, user will need to provide long-lived access token'
-      );
       setConfig({ url: baseUrl, token: '' });
     }
   }, [isInHomeAssistant, config.url, config.token, setConfig]);
@@ -300,11 +296,6 @@ export function useHass() {
   useEffect(() => {
     if (!isRemote) return;
 
-    console.log('C.A.F.E.: Establishing WebSocket connection to Home Assistant...', {
-      url: config.url,
-      hasToken: !!config.token,
-    });
-
     const establishConnection = async () => {
       setIsLoading(true);
       setConnectionError(null);
@@ -314,18 +305,17 @@ export function useHass() {
         const auth = createLongLivedTokenAuth(config.url, config.token);
         const connection = await createConnection({ auth });
 
-        console.log('C.A.F.E.: WebSocket connection established successfully');
         setWsConnection(connection);
 
         // Handle connection events (set these up before subscribing)
         connection.addEventListener('ready', () => {
-          console.log('C.A.F.E.: WebSocket connection ready');
+          
           setConnectionError(null);
           setIsLoading(false);
         });
 
         connection.addEventListener('disconnected', () => {
-          console.log('C.A.F.E.: WebSocket connection disconnected');
+          
           setConnectionError('Connection lost');
         });
 
@@ -343,7 +333,7 @@ export function useHass() {
             last_changed: entity.last_changed || '',
             last_updated: entity.last_updated || '',
           }));
-          console.log('C.A.F.E.: Received entity updates:', entitiesArray.length, 'entities');
+
           setRemoteEntities(entitiesArray);
           // Also mark as loaded once we receive entities
           setIsLoading(false);
@@ -351,13 +341,11 @@ export function useHass() {
 
         // Subscribe to service registry changes
         const unsubscribeServices = subscribeServices(connection, (services: HassServices) => {
-          console.log('C.A.F.E.: Received service updates for domains:', Object.keys(services));
           setRemoteServices(services as Record<string, Record<string, HassService>>);
         });
 
         // Cleanup function
         return () => {
-          console.log('C.A.F.E.: Cleaning up WebSocket connection');
           unsubscribeEntities();
           unsubscribeServices();
           connection.close();
@@ -405,7 +393,7 @@ export function useHass() {
           const response = await fetch(url, {
             method,
             headers: {
-              'Authorization': `Bearer ${config.token}`,
+              Authorization: `Bearer ${config.token}`,
               'Content-Type': 'application/json',
             },
             body: data ? JSON.stringify(data) : undefined,
@@ -439,7 +427,15 @@ export function useHass() {
         console.warn('No Home Assistant connection configured');
       },
     };
-  }, [isEmbedded, isRemote, remoteEntities, remoteServices, wsConnection, config.url, config.token]);
+  }, [
+    isEmbedded,
+    isRemote,
+    remoteEntities,
+    remoteServices,
+    wsConnection,
+    config.url,
+    config.token,
+  ]);
 
   const entities = useMemo(() => Object.values(hass?.states ?? {}), [hass?.states]);
 
@@ -487,4 +483,25 @@ export function useHass() {
     getAllServices,
     getServiceDefinition,
   };
+}
+
+// Global hass accessor for use outside React components (like zustand stores)
+let globalHassInstance: any = null;
+
+export function setGlobalHass(hass: any) {
+  globalHassInstance = hass;
+}
+
+export function getGlobalHass() {
+  // Try to get from our global instance first
+  if (globalHassInstance) {
+    return globalHassInstance;
+  }
+
+  // Fallback: try to get from window.hass if available
+  if (typeof window !== 'undefined' && (window as any).hass) {
+    return (window as any).hass;
+  }
+
+  return null;
 }

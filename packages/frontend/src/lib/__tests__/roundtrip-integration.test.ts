@@ -6,20 +6,21 @@ import { convertAutomationConfigToNodes } from '../automation-converter';
 import { FlowTranspiler } from '@hflow/transpiler';
 import { useFlowStore } from '@/store/flow-store';
 import { generateUUID } from '../utils';
+import type { FlowGraph } from '@hflow/shared';
 
 describe('Roundtrip Import/Export Tests', () => {
   const fixturesDir = join(__dirname, 'fixtures');
-  
+
   // Get all YAML files from fixtures directory
   const yamlFiles = readdirSync(fixturesDir)
-    .filter(file => file.endsWith('.yaml') || file.endsWith('.yml'))
+    .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
     .sort(); // Sort to ensure consistent test order
 
-  yamlFiles.forEach(filename => {
+  yamlFiles.forEach((filename) => {
     it(`should preserve data integrity for ${filename}`, async () => {
       const filePath = join(fixturesDir, filename);
       const originalYamlContent = readFileSync(filePath, 'utf8');
-      
+
       console.log(`\n=== Testing ${filename} ===`);
       console.log('Original YAML:', originalYamlContent);
 
@@ -32,11 +33,14 @@ describe('Roundtrip Import/Export Tests', () => {
       const { nodes, edges } = convertAutomationConfigToNodes(originalConfig);
       expect(nodes.length).toBeGreaterThan(0);
 
-      console.log('Generated nodes:', nodes.map(n => ({ id: n.id, type: n.type, alias: n.data.alias })));
+      console.log(
+        'Generated nodes:',
+        nodes.map((n) => ({ id: n.id, type: n.type, alias: n.data.alias }))
+      );
       console.log('Generated edges:', edges);
 
       // Validate node structure
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         expect(node.id).toBeDefined();
         expect(node.type).toBeDefined();
         expect(node.position).toBeDefined();
@@ -44,7 +48,7 @@ describe('Roundtrip Import/Export Tests', () => {
       });
 
       // Validate edge structure
-      edges.forEach(edge => {
+      edges.forEach((edge) => {
         expect(edge.source).toBeDefined();
         expect(edge.target).toBeDefined();
         // sourceHandle can be null, 'true', or 'false'
@@ -56,24 +60,24 @@ describe('Roundtrip Import/Export Tests', () => {
         id: generateUUID(),
         name: originalConfig.alias,
         nodes,
-        edges: edges.map(e => ({
+        edges: edges.map((e) => ({
           id: `e-${e.source}-${e.target}-${Date.now()}`,
           source: e.source,
           target: e.target,
-          sourceHandle: e.sourceHandle
+          sourceHandle: e.sourceHandle,
         })),
         metadata: {
           mode: originalConfig.mode || 'single',
           initial_state: originalConfig.initial_state ?? true,
           max: originalConfig.max,
-          max_exceeded: originalConfig.max_exceeded
+          max_exceeded: originalConfig.max_exceeded,
         },
-        version: 1
+        version: 1,
       };
 
       // Set the graph in the store
       const store = useFlowStore.getState();
-      store.fromFlowGraph(flowGraph);
+      store.fromFlowGraph(flowGraph as FlowGraph);
 
       // Step 3: Transpile back to YAML using FlowTranspiler
       const transpiler = new FlowTranspiler();
@@ -88,7 +92,17 @@ describe('Roundtrip Import/Export Tests', () => {
       expect(result.success).toBe(true);
       expect(result.output?.automation).toBeDefined();
 
-      const generatedConfig = result.output!.automation;
+      // Type the generated config properly
+      interface GeneratedAutomationConfig {
+        alias: string;
+        description?: string;
+        mode: string;
+        trigger: unknown[];
+        action: unknown[];
+        [key: string]: unknown;
+      }
+
+      const generatedConfig = result.output!.automation as GeneratedAutomationConfig;
       console.log('Generated config:', JSON.stringify(generatedConfig, null, 2));
 
       // Step 4: Core property validation
@@ -105,8 +119,8 @@ describe('Roundtrip Import/Export Tests', () => {
         expect(Array.isArray(generatedConfig.trigger)).toBe(true);
         expect(generatedConfig.trigger.length).toBeGreaterThan(0);
 
-        const originalTriggers = Array.isArray(originalConfig.trigger) 
-          ? originalConfig.trigger 
+        const originalTriggers = Array.isArray(originalConfig.trigger)
+          ? originalConfig.trigger
           : Array.isArray(originalConfig.triggers)
             ? originalConfig.triggers
             : [originalConfig.trigger || originalConfig.triggers];
@@ -114,14 +128,17 @@ describe('Roundtrip Import/Export Tests', () => {
         expect(generatedConfig.trigger.length).toBe(originalTriggers.length);
 
         // Validate each trigger has essential properties
-        generatedConfig.trigger.forEach((trigger: any, index: number) => {
-          const originalTrigger = originalTriggers[index];
-          expect(trigger.platform).toBeDefined();
-          
+        generatedConfig.trigger.forEach((trigger: unknown, index: number) => {
+          const triggerObj = trigger as Record<string, unknown>;
+          const originalTrigger = originalTriggers[index] as Record<string, unknown>;
+          expect(triggerObj.platform).toBeDefined();
+
           // Validate core trigger properties are preserved
-          if (originalTrigger.entity_id) expect(trigger.entity_id).toBe(originalTrigger.entity_id);
-          if (originalTrigger.device_id) expect(trigger.device_id).toBe(originalTrigger.device_id);
-          if (originalTrigger.domain) expect(trigger.domain).toBe(originalTrigger.domain);
+          if (originalTrigger.entity_id)
+            expect(triggerObj.entity_id).toBe(originalTrigger.entity_id);
+          if (originalTrigger.device_id)
+            expect(triggerObj.device_id).toBe(originalTrigger.device_id);
+          if (originalTrigger.domain) expect(triggerObj.domain).toBe(originalTrigger.domain);
         });
       }
 
@@ -147,9 +164,15 @@ describe('Roundtrip Import/Export Tests', () => {
         generatedConfig.action.forEach((action: any, actionIndex: number) => {
           expect(action).toBeDefined();
           // Action should have either service, choose, if, delay, wait, variables (for state machine), or repeat
-          const hasValidActionType = action.service || action.choose || action.if || 
-                                   action.delay || action.wait_template || action.wait_for_trigger ||
-                                   action.variables || action.repeat;
+          const hasValidActionType =
+            action.service ||
+            action.choose ||
+            action.if ||
+            action.delay ||
+            action.wait_template ||
+            action.wait_for_trigger ||
+            action.variables ||
+            action.repeat;
           if (!hasValidActionType) {
             console.error(`Invalid action at index ${actionIndex}:`, action);
           }
@@ -165,16 +188,19 @@ describe('Roundtrip Import/Export Tests', () => {
       console.log('Final YAML:', finalYaml);
 
       // Parse final YAML to ensure it's valid
-      const finalConfig = yaml.load(finalYaml) as any;
+      const finalConfig = yaml.load(finalYaml!) as Record<string, unknown>;
       expect(finalConfig).toBeDefined();
       expect(finalConfig.alias).toBe(originalConfig.alias);
 
       // Metadata validation (CAFE variables should be present)
-      expect(finalConfig.variables?._flow_automator).toBeDefined();
-      expect(finalConfig.variables._flow_automator.version).toBe(1);
+      const variables = finalConfig.variables as
+        | Record<string, Record<string, unknown>>
+        | undefined;
+      expect(variables?._cafe_metadata).toBeDefined();
+      expect(variables!._cafe_metadata.version).toBe(1);
       // Strategy can be 'native' or 'state-machine' depending on complexity
-      expect(['native', 'state-machine']).toContain(finalConfig.variables._flow_automator.strategy);
-      
+      expect(['native', 'state-machine']).toContain(variables!._cafe_metadata.strategy);
+
       console.log(`✅ ${filename} roundtrip test passed`);
     });
   });
@@ -185,14 +211,14 @@ describe('Roundtrip Import/Export Tests', () => {
 
   it('should have consistent node positioning', () => {
     // Test that all fixtures generate nodes with proper positioning
-    yamlFiles.forEach(filename => {
+    yamlFiles.forEach((filename) => {
       const filePath = join(fixturesDir, filename);
       const originalYamlContent = readFileSync(filePath, 'utf8');
       const originalConfig = yaml.load(originalYamlContent) as any;
 
       const { nodes } = convertAutomationConfigToNodes(originalConfig);
-      
-      nodes.forEach(node => {
+
+      nodes.forEach((node) => {
         expect(node.position.x).toBeGreaterThanOrEqual(100);
         expect(node.position.y).toBeGreaterThanOrEqual(-200); // Allow negative Y for branch offsets
         expect(typeof node.position.x).toBe('number');
@@ -202,15 +228,15 @@ describe('Roundtrip Import/Export Tests', () => {
   });
 
   it('should generate valid edge connections', () => {
-    yamlFiles.forEach(filename => {
+    yamlFiles.forEach((filename) => {
       const filePath = join(fixturesDir, filename);
       const originalYamlContent = readFileSync(filePath, 'utf8');
       const originalConfig = yaml.load(originalYamlContent) as any;
 
       const { nodes, edges } = convertAutomationConfigToNodes(originalConfig);
-      const nodeIds = new Set(nodes.map(n => n.id));
-      
-      edges.forEach(edge => {
+      const nodeIds = new Set(nodes.map((n) => n.id));
+
+      edges.forEach((edge) => {
         expect(nodeIds.has(edge.source)).toBe(true);
         expect(nodeIds.has(edge.target)).toBe(true);
         expect(edge.source).not.toBe(edge.target);

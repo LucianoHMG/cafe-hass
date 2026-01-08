@@ -13,7 +13,7 @@ import { load as yamlLoad } from 'js-yaml';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Metadata structure stored in YAML variables._flow_automator
+ * Metadata structure stored in YAML variables._cafe_metadata
  */
 interface FlowAutomatorMetadata {
   version: number;
@@ -146,8 +146,8 @@ export class YamlParser {
       const variables =
         parsed.variables || parsed.script?.[Object.keys(parsed.script)[0]]?.variables;
 
-      if (variables?._flow_automator) {
-        const metadata = variables._flow_automator;
+      if (variables?._cafe_metadata) {
+        const metadata = variables._cafe_metadata;
         // Validate metadata structure
         if (
           typeof metadata === 'object' &&

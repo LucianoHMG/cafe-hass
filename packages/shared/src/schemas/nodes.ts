@@ -16,49 +16,51 @@ import {
  * Data schema for trigger nodes
  * Contains HA-specific trigger configuration
  */
-export const TriggerDataSchema = z.object({
-  alias: z.string().optional(),
-  platform: TriggerPlatformSchema,
-  // State trigger
-  entity_id: z.string().optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  for: z
-    .union([
-      z.string(),
-      z.object({
-        hours: z.number().optional(),
-        minutes: z.number().optional(),
-        seconds: z.number().optional(),
-      }),
-    ])
-    .optional(),
-  // Time trigger
-  at: z.string().optional(),
-  // Time pattern trigger
-  hours: z.string().optional(),
-  minutes: z.string().optional(),
-  seconds: z.string().optional(),
-  // Event trigger
-  event_type: z.string().optional(),
-  event_data: z.record(z.unknown()).optional(),
-  // Sun trigger
-  event: z.enum(['sunrise', 'sunset']).optional(),
-  offset: z.string().optional(),
-  // Numeric state trigger
-  above: z.union([z.number(), z.string()]).optional(),
-  below: z.union([z.number(), z.string()]).optional(),
-  value_template: z.string().optional(),
-  // Template trigger
-  template: z.string().optional(),
-  // Webhook trigger
-  webhook_id: z.string().optional(),
-  // Zone trigger
-  zone: z.string().optional(),
-  // MQTT trigger
-  topic: z.string().optional(),
-  payload: z.string().optional(),
-}).passthrough(); // Allow additional properties to be preserved
+export const TriggerDataSchema = z
+  .object({
+    alias: z.string().optional(),
+    platform: TriggerPlatformSchema,
+    // State trigger
+    entity_id: z.string().optional(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+    for: z
+      .union([
+        z.string(),
+        z.object({
+          hours: z.number().optional(),
+          minutes: z.number().optional(),
+          seconds: z.number().optional(),
+        }),
+      ])
+      .optional(),
+    // Time trigger
+    at: z.string().optional(),
+    // Time pattern trigger
+    hours: z.string().optional(),
+    minutes: z.string().optional(),
+    seconds: z.string().optional(),
+    // Event trigger
+    event_type: z.string().optional(),
+    event_data: z.record(z.unknown()).optional(),
+    // Sun trigger
+    event: z.enum(['sunrise', 'sunset']).optional(),
+    offset: z.string().optional(),
+    // Numeric state trigger
+    above: z.union([z.number(), z.string()]).optional(),
+    below: z.union([z.number(), z.string()]).optional(),
+    value_template: z.string().optional(),
+    // Template trigger
+    template: z.string().optional(),
+    // Webhook trigger
+    webhook_id: z.string().optional(),
+    // Zone trigger
+    zone: z.string().optional(),
+    // MQTT trigger
+    topic: z.string().optional(),
+    payload: z.string().optional(),
+  })
+  .passthrough(); // Allow additional properties to be preserved
 export type TriggerData = z.infer<typeof TriggerDataSchema>;
 
 export const TriggerNodeSchema = z.object({
