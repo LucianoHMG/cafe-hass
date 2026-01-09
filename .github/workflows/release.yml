@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build shared package
+        run: yarn workspace @cafe/shared build
+
+      - name: Build transpiler package
+        run: yarn workspace @cafe/transpiler build
+
+      - name: Build frontend
+        run: yarn workspace @cafe/frontend build
+
+      - name: Copy frontend to custom_components
+        run: |
+          rm -rf custom_components/cafe/www/*
+          cp -r packages/frontend/dist/* custom_components/cafe/www/
+
+      - name: Get version
+        id: version
+        run: echo "version=$(jq -r .version custom_components/cafe/manifest.json)" >> $GITHUB_OUTPUT
+
+      - name: Create release archives
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Create HACS-compatible zip (cafe folder at root level)
+          cd custom_components
+          zip -r ../cafe-${VERSION}.zip cafe -x "*.DS_Store" "*/.DS_Store"
+          
+          # Create alternative tar.gz 
+          tar -czf ../cafe-${VERSION}.tar.gz cafe --exclude="*.DS_Store"
+          
+          # Create a "hacs.zip" that HACS can use (same as versioned zip but with standard name)
+          cp ../cafe-${VERSION}.zip ../hacs.zip
+          
+          cd ..
+          echo "Created archives for version ${VERSION}:"
+          ls -la *.zip *.tar.gz
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            cafe-${{ steps.version.outputs.version }}.zip
+            cafe-${{ steps.version.outputs.version }}.tar.gz
+            hacs.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
