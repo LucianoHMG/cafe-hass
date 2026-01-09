@@ -55,12 +55,13 @@ jobs:
           
           # Create alternative tar.gz 
           tar -czf ../cafe-${VERSION}.tar.gz --exclude="*.DS_Store" cafe
+          cd ..
           
           # Create HACS-compatible zip (files at root level, no cafe/ folder)
-          cd cafe
+          cd custom_components/cafe
           zip -r ../../hacs.zip . -x "*.DS_Store" "*/.DS_Store"
+          cd ../..
           
-          cd ..
           echo "Created archives for version ${VERSION}:"
           ls -la *.zip *.tar.gz
 
