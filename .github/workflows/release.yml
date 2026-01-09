@@ -35,11 +35,11 @@ jobs:
       - name: Build frontend
         run: yarn workspace @cafe/frontend build
 
-      - name: Copy frontend to custom_components
+      - name: Verify www directory was created
         run: |
-          mkdir -p custom_components/cafe/www
-          rm -rf custom_components/cafe/www/*
-          cp -r packages/frontend/dist/* custom_components/cafe/www/
+          ls -la custom_components/cafe/
+          ls -la custom_components/cafe/www/ || echo "www directory missing!"
+          ls -la custom_components/cafe/www/assets/ || echo "assets directory missing!"
 
       - name: Get version
         id: version

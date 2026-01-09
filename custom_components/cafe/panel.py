@@ -26,19 +26,10 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     ])
 
     # Find the main JS file
-    assets_path = www_path / "assets"
-    _LOGGER.debug(f"Looking for JS files in: {assets_path}")
-    _LOGGER.debug(f"Assets directory exists: {assets_path.exists()}")
-    if assets_path.exists():
-        all_files = list(assets_path.glob("*"))
-        _LOGGER.debug(f"All files in assets: {[f.name for f in all_files]}")
-        js_pattern_files = list(assets_path.glob("index-*.js"))
-        _LOGGER.debug(f"Files matching index-*.js pattern: {[f.name for f in js_pattern_files]}")
-    
     js_files = [f for f in (www_path / "assets").glob("index-*.js") if not f.name.endswith('.map')]
-    _LOGGER.debug(f"Final filtered JS files: {[f.name for f in js_files]}")
     if not js_files:
         _LOGGER.error("No JavaScript files found in assets directory")
+        _LOGGER.error(f"www path: {www_path}, assets exist: {(www_path / 'assets').exists()}")
         return
     
     js_filename = js_files[0].name
