@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode } from '@cafe/shared';
 import { useEffect, useState } from 'react';
 import { FormField } from '@/components/forms/FormField';
 import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
@@ -137,8 +137,8 @@ export function DeviceTriggerFields({ node, onChange, entities }: DeviceTriggerF
               <SelectValue placeholder="Select trigger type..." />
             </SelectTrigger>
             <SelectContent>
-              {availableDeviceTriggers.map((trigger, idx) => (
-                <SelectItem key={idx} value={trigger.type}>
+              {availableDeviceTriggers.map((trigger) => (
+                <SelectItem key={`${trigger.domain}-${trigger.type}`} value={trigger.type}>
                   {trigger.type} ({trigger.domain})
                 </SelectItem>
               ))}

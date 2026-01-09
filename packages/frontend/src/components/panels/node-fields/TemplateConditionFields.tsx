@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode } from '@cafe/shared';
 import { FormField } from '@/components/forms/FormField';
 import { Textarea } from '@/components/ui/textarea';
 import { getNodeDataString } from '@/utils/nodeData';

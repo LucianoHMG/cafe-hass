@@ -1,6 +1,8 @@
 import { Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
+import type { FlowNode } from '@cafe/shared';
 import { FormField } from '@/components/forms/FormField';
+import type { HassEntity } from '@/hooks/useHass';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getHandledProperties } from '@/config/handledProperties';
@@ -23,7 +25,7 @@ export function PropertyPanel() {
   // Use entities from hass object directly
   const effectiveEntities = useMemo(() => {
     if (hass?.states && Object.keys(hass.states).length > 0) {
-      return Object.values(hass.states).map((state: any) => ({
+      return Object.values(hass.states).map((state: HassEntity) => ({
         entity_id: state.entity_id,
         state: state.state,
         attributes: state.attributes || {},
@@ -39,26 +41,14 @@ export function PropertyPanel() {
     [nodes, selectedNodeId]
   );
 
-  if (!selectedNode) {
-    return (
-      <div className="p-4 text-center text-slate-500 text-sm">
-        Select a node to edit its properties
-      </div>
-    );
-  }
-
-  const handleChange = (key: string, value: unknown) => {
-    updateNodeData(selectedNode.id, { [key]: value });
-  };
-
-  const handleDeleteProperty = (key: string) => {
-    updateNodeData(selectedNode.id, { [key]: undefined });
-  };
-
-  // Get handled properties for this node type
+  // Get handled properties for this node type - must be before early return
   // For device triggers/conditions, we need to exclude ALL current node properties to prevent duplicates
   // since device field components handle them dynamically based on API metadata
   const handledProperties = useMemo(() => {
+    if (!selectedNode) {
+      return getHandledProperties('trigger', []);
+    }
+    
     const baseHandled = getHandledProperties(selectedNode.type || 'trigger', []);
     const nodeData = selectedNode.data as Record<string, unknown>;
     
@@ -76,6 +66,22 @@ export function PropertyPanel() {
     
     return baseHandled;
   }, [selectedNode]);
+
+  if (!selectedNode) {
+    return (
+      <div className="p-4 text-center text-slate-500 text-sm">
+        Select a node to edit its properties
+      </div>
+    );
+  }
+
+  const handleChange = (key: string, value: unknown) => {
+    updateNodeData(selectedNode.id, { [key]: value });
+  };
+
+  const handleDeleteProperty = (key: string) => {
+    updateNodeData(selectedNode.id, { [key]: undefined });
+  };
 
   return (
     <div className="h-full flex-1 space-y-4 overflow-y-auto p-4">
@@ -108,11 +114,11 @@ export function PropertyPanel() {
       </FormField>
 
       {/* Node-specific fields */}
-      <NodeFields node={selectedNode as any} onChange={handleChange} entities={effectiveEntities} />
+      <NodeFields node={selectedNode as FlowNode} onChange={handleChange} entities={effectiveEntities} />
 
       {/* Additional properties editor */}
       <PropertyEditor
-        node={selectedNode as any}
+        node={selectedNode as FlowNode}
         handledProperties={handledProperties}
         onChange={handleChange}
         onDelete={handleDeleteProperty}

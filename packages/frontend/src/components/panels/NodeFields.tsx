@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode } from '@cafe/shared';
 import type { HassEntity } from '@/hooks/useHass';
 import { ActionFields } from './node-fields/ActionFields';
 import { ConditionFields } from './node-fields/ConditionFields';

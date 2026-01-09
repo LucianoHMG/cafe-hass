@@ -65,7 +65,7 @@ describe('Platform/Trigger Conflict Fix', () => {
 
     if (triggerNode) {
       expect(triggerNode.data.platform).toBe('device');
-      expect(triggerNode.data.domain).toBeUndefined();
+      expect(triggerNode.data.domain).toBe('device'); // Domain is now preserved
     }
   });
 });

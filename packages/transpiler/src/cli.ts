@@ -8,7 +8,7 @@ import { FlowTranspiler } from './FlowTranspiler';
 const program = new Command();
 
 program
-  .name('hflow')
+  .name('cafe')
   .description('Transpile React Flow graphs to Home Assistant YAML')
   .version('0.1.0');
 
@@ -230,8 +230,8 @@ program
     console.log(`Sample flow created: ${file}`);
     console.log('');
     console.log('Try it out:');
-    console.log(`  hflow check ${file}`);
-    console.log(`  hflow transpile ${file}`);
+    console.log(`  cafe check ${file}`);
+    console.log(`  cafe transpile ${file}`);
   });
 
 program.parse();

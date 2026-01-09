@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@hflow/shared';
+import type { FlowGraph } from '@cafe/shared';
 import graphlib from 'graphlib';
 
 const { Graph, alg } = graphlib;

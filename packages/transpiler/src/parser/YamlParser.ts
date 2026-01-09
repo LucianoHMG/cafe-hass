@@ -7,8 +7,8 @@ import type {
   FlowNode,
   TriggerNode,
   WaitNode,
-} from '@hflow/shared';
-import { FlowGraphSchema, validateGraphStructure } from '@hflow/shared';
+} from '@cafe/shared';
+import { FlowGraphSchema, validateGraphStructure } from '@cafe/shared';
 import { load as yamlLoad } from 'js-yaml';
 import { v4 as uuidv4 } from 'uuid';
 

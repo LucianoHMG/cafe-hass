@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode, TriggerPlatform } from '@cafe/shared';
 import { useEffect } from 'react';
 import { FormField } from '@/components/forms/FormField';
 import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
@@ -80,7 +80,7 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
         }
 
         // Other platforms use static field configuration
-        const fields = getTriggerFields(effectivePlatform as any);
+        const fields = getTriggerFields(effectivePlatform as TriggerPlatform);
         return fields.map((field) => (
           <DynamicFieldRenderer
             key={field.name}

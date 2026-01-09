@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@hflow/transpiler';
+import { FlowTranspiler } from '@cafe/transpiler';
 import { describe, expect, it } from 'vitest';
 import { useFlowStore } from '@/store/flow-store';
 import { convertAutomationConfigToNodes } from '../automation-converter';
@@ -184,7 +184,7 @@ describe('automation-converter', () => {
       expect(triggerNode.data.domain).toBe('knx');
       expect(triggerNode.data.device_id).toBe('ee504a40b987814032d9ec9c29b1a43f');
       expect(triggerNode.data.type).toBe('telegram');
-      expect(triggerNode.data.trigger).toBe('device');
+      expect(triggerNode.data.platform).toBe('device'); // 'trigger' field is replaced with 'platform'
       expect(triggerNode.data.group_value_write).toBe(true);
       expect(triggerNode.data.group_value_response).toBe(true);
       expect(triggerNode.data.group_value_read).toBe(true);
@@ -230,7 +230,7 @@ describe('automation-converter', () => {
       expect(storeTriggerpNode.data.domain).toBe('knx');
       expect(storeTriggerpNode.data.device_id).toBe('ee504a40b987814032d9ec9c29b1a43f');
       expect(storeTriggerpNode.data.type).toBe('telegram');
-      expect(storeTriggerpNode.data.trigger).toBe('device');
+      expect(storeTriggerpNode.data.platform).toBe('device'); // 'trigger' field is replaced with 'platform'
       expect(storeTriggerpNode.data.group_value_write).toBe(true);
       expect(storeTriggerpNode.data.group_value_response).toBe(true);
       expect(storeTriggerpNode.data.group_value_read).toBe(true);

@@ -1,4 +1,4 @@
-import { FlowTranspiler } from '@hflow/transpiler';
+import { FlowTranspiler } from '@cafe/transpiler';
 import { AlertCircle, Check, Copy } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';

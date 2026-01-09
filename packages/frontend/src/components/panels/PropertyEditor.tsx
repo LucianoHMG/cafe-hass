@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode } from '@cafe/shared';
 import { Plus, Trash2 } from 'lucide-react';
 import { FormField } from '@/components/forms/FormField';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 {
-  "name": "hflow",
+  "name": "cafe",
   "private": true,
   "packageManager": "yarn@4.12.0",
   "workspaces": [
@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "build:ha": "npm run build && echo '✓ Built and copied to custom_components/cafe/www/'",
     "test": "vitest",
-    "test:cli": "yarn workspace @hflow/transpiler cli",
+    "test:cli": "yarn workspace @cafe/transpiler cli",
     "lint": "turbo run lint",
     "lint:biome": "biome lint .",
     "lint:fix": "biome lint --apply .",

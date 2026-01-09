@@ -26,13 +26,13 @@ jobs:
         run: yarn install --immutable
 
       - name: Build shared package
-        run: yarn workspace @hflow/shared build
+        run: yarn workspace @cafe/shared build
 
       - name: Build transpiler package
-        run: yarn workspace @hflow/transpiler build
+        run: yarn workspace @cafe/transpiler build
 
       - name: Build frontend
-        run: yarn workspace @hflow/frontend build
+        run: yarn workspace @cafe/frontend build
 
       - name: Run tests
         run: yarn test

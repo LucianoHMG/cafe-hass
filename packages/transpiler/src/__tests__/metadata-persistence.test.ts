@@ -1,4 +1,4 @@
-import type { FlowGraph } from '@hflow/shared';
+import type { FlowGraph } from '@cafe/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { describe, expect, it } from 'vitest';
 import { FlowTranspiler } from '../FlowTranspiler';

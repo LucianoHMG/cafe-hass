@@ -1,4 +1,4 @@
-import type { FlowEdge, FlowGraph, FlowNode } from '@hflow/shared';
+import type { FlowEdge, FlowGraph, FlowNode } from '@cafe/shared';
 import {
   addEdge,
   applyEdgeChanges,
@@ -280,7 +280,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       }
 
       // Import transpiler and convert to automation config
-      const { FlowTranspiler } = await import('@hflow/transpiler');
+      const { FlowTranspiler } = await import('@cafe/transpiler');
       const transpiler = new FlowTranspiler();
 
       // Validate first
@@ -388,7 +388,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       }
 
       // Import transpiler and convert to automation config
-      const { FlowTranspiler } = await import('@hflow/transpiler');
+      const { FlowTranspiler } = await import('@cafe/transpiler');
       const transpiler = new FlowTranspiler();
 
       // Validate first

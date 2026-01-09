@@ -41,10 +41,10 @@ import { useFlowStore } from '@/store/flow-store';
 
 // Home Assistant context for passing data from custom element
 interface HassContextValue {
-  hass?: any;
+  hass?: unknown;
   narrow?: boolean;
-  route?: any;
-  panel?: any;
+  route?: unknown;
+  panel?: unknown;
 }
 
 const HassContext = createContext<HassContextValue>({});
@@ -52,10 +52,10 @@ const HassContext = createContext<HassContextValue>({});
 export const useHassContext = () => useContext(HassContext);
 
 interface AppProps {
-  hass?: any;
+  hass?: unknown;
   narrow?: boolean;
-  route?: any;
-  panel?: any;
+  route?: unknown;
+  panel?: unknown;
 }
 
 type RightPanelTab = 'properties' | 'yaml' | 'simulator';

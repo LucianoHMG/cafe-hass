@@ -6,7 +6,7 @@ import type {
   FlowNode,
   TriggerNode,
   WaitNode,
-} from '@hflow/shared';
+} from '@cafe/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 import { BaseStrategy, type HAYamlOutput } from './base';
 

@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useHass } from '@/hooks/useHass';
+import { useHass, type HassEntity } from '@/hooks/useHass';
 import { convertAutomationConfigToNodes } from '@/lib/automation-converter';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
 import { useFlowStore } from '@/store/flow-store';
@@ -46,11 +46,11 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
       return [];
     }
 
-    const automationEntities = Object.values(hass.states).filter((entity: any) =>
+    const automationEntities = Object.values(hass.states).filter((entity: HassEntity) =>
       entity.entity_id.startsWith('automation.')
     );
 
-    return automationEntities.map((entity: any) => ({
+    return automationEntities.map((entity: HassEntity) => ({
       entity_id: entity.entity_id,
       attributes: entity.attributes || {},
       state: entity.state,

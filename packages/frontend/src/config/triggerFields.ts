@@ -1,4 +1,4 @@
-import type { TriggerPlatform } from '@hflow/shared';
+import type { TriggerPlatform } from '@cafe/shared';
 import type { SelectorType } from '@/hooks/useDeviceAutomation';
 
 /**

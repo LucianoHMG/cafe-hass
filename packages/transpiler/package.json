@@ -1,11 +1,11 @@
 {
-  "name": "@hflow/transpiler",
+  "name": "@cafe/transpiler",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "hflow": "./dist/cli.js"
+    "cafe": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -21,7 +21,7 @@
     "cli": "npx tsx src/cli.ts"
   },
   "dependencies": {
-    "@hflow/shared": "workspace:*",
+    "@cafe/shared": "workspace:*",
     "commander": "^12.0.0",
     "elkjs": "^0.11.0",
     "graphlib": "^2.1.8",

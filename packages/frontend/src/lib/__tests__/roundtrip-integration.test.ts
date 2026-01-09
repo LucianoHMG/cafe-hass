@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { FlowGraph } from '@hflow/shared';
-import { FlowTranspiler } from '@hflow/transpiler';
+import type { FlowGraph } from '@cafe/shared';
+import { FlowTranspiler } from '@cafe/transpiler';
 import * as yaml from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 import { useFlowStore } from '@/store/flow-store';

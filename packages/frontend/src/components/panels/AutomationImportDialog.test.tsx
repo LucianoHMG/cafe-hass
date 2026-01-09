@@ -107,7 +107,7 @@ describe('automation-converter', () => {
       expect(result[3].action.action).toBe('light.turn_off');
       expect(result[3].branch).toBe('then');
       expect(result[4].action.action).toBe('light.turn_on');
-      expect(result[4].branch).toBe('default');
+      expect(result[4].branch).toBe('else');
     });
 
     it('should handle empty then/else branches', () => {

@@ -14,7 +14,7 @@ interface ServiceField {
   description?: string;
   example?: unknown;
   required?: boolean;
-  selector?: Record<string, any>;
+  selector?: Record<string, unknown>;
 }
 
 interface ServiceDataFieldsProps {

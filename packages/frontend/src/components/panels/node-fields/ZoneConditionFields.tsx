@@ -1,4 +1,4 @@
-import type { FlowNode } from '@hflow/shared';
+import type { FlowNode } from '@cafe/shared';
 import { FormField } from '@/components/forms/FormField';
 import { EntitySelector } from '@/components/ui/EntitySelector';
 import { Input } from '@/components/ui/input';
