@@ -59,6 +59,11 @@ export const TriggerDataSchema = z
     // MQTT trigger
     topic: z.string().optional(),
     payload: z.string().optional(),
+    // Device trigger fields
+    device_id: z.string().optional(),
+    domain: z.string().optional(),
+    type: z.string().optional(), // Not to be confused with node type
+    subtype: z.string().optional(),
   })
   .passthrough(); // Allow additional properties to be preserved
 export type TriggerData = z.infer<typeof TriggerDataSchema>;

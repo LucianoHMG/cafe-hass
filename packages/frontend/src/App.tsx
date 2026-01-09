@@ -350,7 +350,7 @@ function App({ hass: externalHass, narrow = false, route, panel }: AppProps = {}
             </div>
             <div className="flex items-center gap-2">
               <Info className="h-3 w-3" />
-              <span>Home Assistant Visual Automation Editor</span>
+              <span>Complex Automation Flow Editor</span>
             </div>
           </footer>
         </div>

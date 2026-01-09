@@ -1,5 +1,5 @@
 import { Trash2, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { EntitySelector } from '@/components/ui/EntitySelector';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,18 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useHass } from '@/hooks/useHass';
 import { useFlowStore } from '@/store/flow-store';
+import { DynamicFieldRenderer } from '@/components/ui/DynamicFieldRenderer';
+import { getTriggerFields, usesDeviceAutomation } from '@/config/triggerFields';
+import { useDeviceAutomation } from '@/hooks/useDeviceAutomation';
+import type { DeviceTrigger, TriggerField } from '@/hooks/useDeviceAutomation';
 
 export function PropertyPanel() {
   const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
   const nodes = useFlowStore((s) => s.nodes);
   const updateNodeData = useFlowStore((s) => s.updateNodeData);
   const removeNode = useFlowStore((s) => s.removeNode);
-  const { hass, entities, getAllServices, getServiceDefinition } = useHass();
+  const { hass, entities, getAllServices, getServiceDefinition, sendMessage } = useHass();
+  const { getDeviceTriggers, getTriggerCapabilities } = useDeviceAutomation();
 
   // State for adding new properties
   const [newPropertyKey, setNewPropertyKey] = useState('');
@@ -29,6 +34,84 @@ export function PropertyPanel() {
     'string'
   );
   const [isAddingProperty, setIsAddingProperty] = useState(false);
+
+  // State for device triggers
+  const [availableDeviceTriggers, setAvailableDeviceTriggers] = useState<DeviceTrigger[]>([]);
+  const [triggerCapabilities, setTriggerCapabilities] = useState<TriggerField[]>([]);
+  const [loadingTriggers, setLoadingTriggers] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+
+  // Fetch translations from Home Assistant
+  useEffect(() => {
+    // Try to get translations from hass object
+    const hassWindow = window as unknown as {
+      hass?: {
+        resources?: Record<string, string>;
+        localize?: (key: string) => string;
+        translationMetadata?: {
+          fragments?: string[];
+          translations?: Record<string, Record<string, string>>;
+        };
+      };
+    };
+
+    // Try multiple locations for translations
+    if (hassWindow.hass?.resources) {
+      console.log('Found translations in hass.resources');
+      setTranslations(hassWindow.hass.resources);
+    } else if (hassWindow.hass?.translationMetadata?.translations) {
+      console.log('Found translations in hass.translationMetadata');
+      // Flatten nested translations
+      const flatTranslations: Record<string, string> = {};
+      Object.values(hassWindow.hass.translationMetadata.translations).forEach((langTranslations) => {
+        Object.assign(flatTranslations, langTranslations);
+      });
+      setTranslations(flatTranslations);
+    } else if (window.parent && window.parent !== window) {
+      // Try parent window
+      try {
+        const parentHass = (window.parent as unknown as {
+          hass?: {
+            resources?: Record<string, string>;
+            translationMetadata?: {
+              translations?: Record<string, Record<string, string>>;
+            };
+          };
+        }).hass;
+
+        if (parentHass?.resources) {
+          console.log('Found translations in parent hass.resources');
+          setTranslations(parentHass.resources);
+        } else if (parentHass?.translationMetadata?.translations) {
+          console.log('Found translations in parent hass.translationMetadata');
+          const flatTranslations: Record<string, string> = {};
+          Object.values(parentHass.translationMetadata.translations).forEach((langTranslations) => {
+            Object.assign(flatTranslations, langTranslations);
+          });
+          setTranslations(flatTranslations);
+        }
+      } catch {
+        console.log('Cross-origin access blocked for parent window');
+      }
+    }
+
+    // Always try to fetch translations via WebSocket as fallback or to get more complete data
+    sendMessage({
+      type: 'frontend/get_translations',
+      language: navigator.language.split('-')[0] || 'en',
+      category: 'device_automation',
+    })
+      .then((result: any) => {
+        console.log('Translation fetch result:', result);
+        if (result?.resources) {
+          setTranslations((prev) => ({ ...prev, ...result.resources }));
+        }
+      })
+      .catch((error) => {
+        console.log('Failed to fetch translations via WebSocket:', error);
+        // This is expected if the message type doesn't exist, so we don't console.error
+      });
+  }, [sendMessage]);
 
   // Use entities from hass object directly
   const effectiveEntities = useMemo(() => {
@@ -169,150 +252,54 @@ export function PropertyPanel() {
                 <SelectItem value="state">State Change</SelectItem>
                 <SelectItem value="numeric_state">Numeric State</SelectItem>
                 <SelectItem value="time">Time</SelectItem>
+                <SelectItem value="time_pattern">Time Pattern</SelectItem>
                 <SelectItem value="sun">Sun</SelectItem>
                 <SelectItem value="event">Event</SelectItem>
+                <SelectItem value="mqtt">MQTT</SelectItem>
+                <SelectItem value="webhook">Webhook</SelectItem>
+                <SelectItem value="zone">Zone</SelectItem>
                 <SelectItem value="template">Template</SelectItem>
+                <SelectItem value="homeassistant">Home Assistant</SelectItem>
                 <SelectItem value="device">Device</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* State trigger fields */}
-          {(triggerPlatform === 'state' || triggerPlatform === 'numeric_state') && (
-            <>
-              <div className="space-y-2">
-                <Label className="font-medium text-muted-foreground text-xs">Entity</Label>
-                <EntitySelector
-                  value={((selectedNode.data as Record<string, unknown>).entity_id as string) || ''}
-                  onChange={(value) => handleChange('entity_id', value)}
-                  entities={effectiveEntities}
-                  placeholder="Select entity..."
-                />
-              </div>
-              {triggerPlatform === 'state' && (
-                <>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-muted-foreground text-xs">To State</Label>
-                    <Input
-                      type="text"
-                      value={((selectedNode.data as Record<string, unknown>).to as string) || ''}
-                      onChange={(e) => handleChange('to', e.target.value)}
-                      placeholder="e.g., on, off, home"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-muted-foreground text-xs">
-                      From State (optional)
-                    </Label>
-                    <Input
-                      type="text"
-                      value={((selectedNode.data as Record<string, unknown>).from as string) || ''}
-                      onChange={(e) => handleChange('from', e.target.value)}
-                      placeholder="e.g., off"
-                    />
-                  </div>
-                </>
-              )}
-              {triggerPlatform === 'numeric_state' && (
-                <>
-                  <div className="space-y-2">
-                    <Label className="font-medium text-muted-foreground text-xs">Above</Label>
-                    <Input
-                      type="text"
-                      value={((selectedNode.data as Record<string, unknown>).above as string) || ''}
-                      onChange={(e) => handleChange('above', e.target.value)}
-                      placeholder="e.g., 20"
-                    />
-                  </div>
-                  <div>
-                    <Label className="font-medium text-muted-foreground text-xs">Below</Label>
-                    <Input
-                      type="text"
-                      value={((selectedNode.data as Record<string, unknown>).below as string) || ''}
-                      onChange={(e) => handleChange('below', e.target.value)}
-                      placeholder="e.g., 30"
-                    />
-                  </div>
-                </>
-              )}
-            </>
-          )}
+          {/* Dynamic fields based on platform */}
+          {(() => {
+            const platform = triggerPlatform || 'state';
 
-          {/* Time trigger fields */}
-          {triggerPlatform === 'time' && (
-            <div className="space-y-2">
-              <Label className="font-medium text-muted-foreground text-xs">At (time)</Label>
-              <Input
-                type="text"
-                value={((selectedNode.data as Record<string, unknown>).at as string) || ''}
-                onChange={(e) => handleChange('at', e.target.value)}
-                placeholder="e.g., 07:00:00 or input_datetime.wake_up"
+            // Device triggers use API-driven fields
+            if (platform === 'device') {
+              return <DeviceTriggerFields
+                selectedNode={selectedNode}
+                handleChange={handleChange}
+                availableDeviceTriggers={availableDeviceTriggers}
+                setAvailableDeviceTriggers={setAvailableDeviceTriggers}
+                triggerCapabilities={triggerCapabilities}
+                setTriggerCapabilities={setTriggerCapabilities}
+                loadingTriggers={loadingTriggers}
+                setLoadingTriggers={setLoadingTriggers}
+                getDeviceTriggers={getDeviceTriggers}
+                getTriggerCapabilities={getTriggerCapabilities}
+                effectiveEntities={effectiveEntities}
+                sendMessage={sendMessage}
+                translations={translations}
+              />;
+            }
+
+            // Other platforms use static field configuration
+            const fields = getTriggerFields(platform as any);
+            return fields.map((field) => (
+              <DynamicFieldRenderer
+                key={field.name}
+                field={field}
+                value={(selectedNode.data as Record<string, unknown>)[field.name]}
+                onChange={(value) => handleChange(field.name, value)}
+                entities={effectiveEntities}
               />
-            </div>
-          )}
-
-          {/* Sun trigger fields */}
-          {triggerPlatform === 'sun' && (
-            <>
-              <div className="space-y-2">
-                <Label className="font-medium text-muted-foreground text-xs">Event</Label>
-                <Select
-                  value={
-                    ((selectedNode.data as Record<string, unknown>).event as string) || 'sunset'
-                  }
-                  onValueChange={(value) => handleChange('event', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sunrise">Sunrise</SelectItem>
-                    <SelectItem value="sunset">Sunset</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-medium text-muted-foreground text-xs">
-                  Offset (optional)
-                </Label>
-                <Input
-                  type="text"
-                  value={((selectedNode.data as Record<string, unknown>).offset as string) || ''}
-                  onChange={(e) => handleChange('offset', e.target.value)}
-                  placeholder="e.g., -00:30:00"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Event trigger fields */}
-          {triggerPlatform === 'event' && (
-            <div className="space-y-2">
-              <Label className="font-medium text-muted-foreground text-xs">Event Type</Label>
-              <Input
-                type="text"
-                value={((selectedNode.data as Record<string, unknown>).event_type as string) || ''}
-                onChange={(e) => handleChange('event_type', e.target.value)}
-                placeholder="e.g., zha_event, call_service"
-              />
-            </div>
-          )}
-
-          {/* Template trigger fields */}
-          {triggerPlatform === 'template' && (
-            <div className="space-y-2">
-              <Label className="font-medium text-muted-foreground text-xs">Value Template</Label>
-              <Textarea
-                value={
-                  ((selectedNode.data as Record<string, unknown>).value_template as string) || ''
-                }
-                onChange={(e) => handleChange('value_template', e.target.value)}
-                className="font-mono"
-                rows={3}
-                placeholder="{{ states('sensor.temperature') | float > 25 }}"
-              />
-            </div>
-          )}
+            ));
+          })()}
         </>
       )}
 
@@ -846,6 +833,7 @@ export function PropertyPanel() {
           'device_id',
           'domain',
           'type',
+          'subtype',
           'entity_id',
           'condition',
           // Action properties handled by specific UI
@@ -860,6 +848,13 @@ export function PropertyPanel() {
           // Internal properties
           '_conditionId',
         ]);
+
+        // For device triggers, also exclude dynamically rendered fields
+        if (selectedNode.type === 'trigger' && data.platform === 'device') {
+          triggerCapabilities.forEach((field) => {
+            handledProperties.add(field.name);
+          });
+        }
 
         // Get unhandled properties
         const unhandledProperties = Object.entries(data).filter(
@@ -1054,5 +1049,194 @@ export function PropertyPanel() {
 
       <div className="pt-2 text-muted-foreground text-xs">Node ID: {selectedNode.id}</div>
     </div>
+  );
+}
+
+/**
+ * Component for device trigger fields with dynamic API-based rendering
+ */
+function DeviceTriggerFields({
+  selectedNode,
+  handleChange,
+  availableDeviceTriggers,
+  setAvailableDeviceTriggers,
+  triggerCapabilities,
+  setTriggerCapabilities,
+  loadingTriggers,
+  setLoadingTriggers,
+  getDeviceTriggers,
+  getTriggerCapabilities,
+  effectiveEntities,
+  sendMessage,
+  translations,
+}: {
+  selectedNode: any;
+  handleChange: (key: string, value: unknown) => void;
+  availableDeviceTriggers: DeviceTrigger[];
+  setAvailableDeviceTriggers: (triggers: DeviceTrigger[]) => void;
+  triggerCapabilities: TriggerField[];
+  setTriggerCapabilities: (fields: TriggerField[]) => void;
+  loadingTriggers: boolean;
+  setLoadingTriggers: (loading: boolean) => void;
+  getDeviceTriggers: (deviceId: string) => Promise<DeviceTrigger[]>;
+  getTriggerCapabilities: (trigger: Partial<DeviceTrigger>) => Promise<{ extra_fields?: TriggerField[] }>;
+  effectiveEntities: any[];
+  sendMessage: (message: Record<string, unknown>) => Promise<any>;
+  translations: Record<string, string>;
+}) {
+  const data = selectedNode.data as Record<string, unknown>;
+  const deviceId = (data.device_id as string) || '';
+  const selectedTriggerType = (data.type as string) || '';
+
+  // State for available devices
+  const [availableDevices, setAvailableDevices] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+
+  // Fetch available devices from device registry
+  useEffect(() => {
+    setLoadingDevices(true);
+    sendMessage({
+      type: 'config/device_registry/list',
+    })
+      .then((devices: any[]) => {
+        const deviceList = devices.map((device: any) => ({
+          id: device.id,
+          name: device.name || device.name_by_user || device.id,
+        }));
+        setAvailableDevices(deviceList);
+      })
+      .catch((error: any) => {
+        console.error('Failed to load devices:', error);
+        setAvailableDevices([]);
+      })
+      .finally(() => {
+        setLoadingDevices(false);
+      });
+  }, [sendMessage]);
+
+  // Fetch triggers when device is selected
+  useEffect(() => {
+    if (!deviceId) {
+      setAvailableDeviceTriggers([]);
+      return;
+    }
+
+    setLoadingTriggers(true);
+    getDeviceTriggers(deviceId)
+      .then((triggers) => {
+        setAvailableDeviceTriggers(triggers);
+      })
+      .catch((error) => {
+        console.error('Failed to load device triggers:', error);
+        setAvailableDeviceTriggers([]);
+      })
+      .finally(() => {
+        setLoadingTriggers(false);
+      });
+  }, [deviceId, getDeviceTriggers, setAvailableDeviceTriggers, setLoadingTriggers]);
+
+  // Fetch capabilities when trigger type is selected
+  useEffect(() => {
+    if (!deviceId || !selectedTriggerType) {
+      setTriggerCapabilities([]);
+      return;
+    }
+
+    const triggerConfig: Partial<DeviceTrigger> = {
+      device_id: deviceId,
+      domain: data.domain as string,
+      type: selectedTriggerType,
+      platform: 'device',
+    };
+
+    getTriggerCapabilities(triggerConfig)
+      .then((capabilities) => {
+        setTriggerCapabilities(capabilities.extra_fields || []);
+      })
+      .catch((error) => {
+        console.error('Failed to load trigger capabilities:', error);
+        setTriggerCapabilities([]);
+      });
+  }, [deviceId, selectedTriggerType, data.domain, getTriggerCapabilities, setTriggerCapabilities]);
+
+  return (
+    <>
+      {/* Device selector */}
+      <div className="space-y-2">
+        <Label className="font-medium text-muted-foreground text-xs">Device</Label>
+        {loadingDevices ? (
+          <div className="text-sm text-muted-foreground">Loading devices...</div>
+        ) : availableDevices.length > 0 ? (
+          <Select value={deviceId} onValueChange={(value) => handleChange('device_id', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select device..." />
+            </SelectTrigger>
+            <SelectContent>
+              {availableDevices.map((device) => (
+                <SelectItem key={device.id} value={device.id}>
+                  {device.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            type="text"
+            value={deviceId}
+            onChange={(e) => handleChange('device_id', e.target.value)}
+            placeholder="Enter device ID manually"
+          />
+        )}
+        {!loadingDevices && availableDevices.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No devices found. Enter device ID manually or check your Home Assistant connection.
+          </p>
+        )}
+      </div>
+
+      {/* Trigger type selector */}
+      {deviceId && availableDeviceTriggers.length > 0 && (
+        <div className="space-y-2">
+          <Label className="font-medium text-muted-foreground text-xs">Trigger Type</Label>
+          <Select value={selectedTriggerType} onValueChange={(value) => {
+            // Find the selected trigger to get its domain
+            const trigger = availableDeviceTriggers.find(t => t.type === value);
+            if (trigger) {
+              handleChange('type', value);
+              handleChange('domain', trigger.domain);
+            }
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select trigger type..." />
+            </SelectTrigger>
+            <SelectContent>
+              {availableDeviceTriggers.map((trigger, idx) => (
+                <SelectItem key={idx} value={trigger.type}>
+                  {trigger.type} ({trigger.domain})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loadingTriggers && (
+        <div className="text-sm text-muted-foreground">Loading triggers...</div>
+      )}
+
+      {/* Dynamic fields from capabilities API */}
+      {triggerCapabilities.map((field) => (
+        <DynamicFieldRenderer
+          key={field.name}
+          field={field}
+          value={data[field.name]}
+          onChange={(value) => handleChange(field.name, value)}
+          entities={effectiveEntities}
+          domain={data.domain as string}
+          translations={translations}
+        />
+      ))}
+    </>
   );
 }

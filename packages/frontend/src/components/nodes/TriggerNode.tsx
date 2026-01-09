@@ -28,6 +28,88 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
     device: 'Device',
   };
 
+  // Generate display text based on platform
+  const getDisplayInfo = () => {
+    const platform = data.platform;
+
+    switch (platform) {
+      case 'device':
+        return {
+          title: data.alias || 'Device Trigger',
+          subtitle: data.type ? `${data.domain || 'device'}: ${data.type}` : 'Device',
+          detail: data.device_id ? `Device: ${data.device_id.substring(0, 8)}...` : null,
+        };
+
+      case 'state':
+        return {
+          title: data.alias || 'State Change',
+          subtitle: data.entity_id || 'State',
+          detail: data.to ? `to: ${data.to}` : null,
+        };
+
+      case 'numeric_state':
+        return {
+          title: data.alias || 'Numeric State',
+          subtitle: data.entity_id || 'Numeric State',
+          detail:
+            data.above || data.below
+              ? `${data.above ? `>${data.above}` : ''}${data.above && data.below ? ' ' : ''}${data.below ? `<${data.below}` : ''}`
+              : null,
+        };
+
+      case 'event':
+        return {
+          title: data.alias || 'Event',
+          subtitle: platformLabels[platform],
+          detail: data.event_type || null,
+        };
+
+      case 'time':
+        return {
+          title: data.alias || 'Time',
+          subtitle: platformLabels[platform],
+          detail: data.at || null,
+        };
+
+      case 'sun':
+        return {
+          title: data.alias || 'Sun',
+          subtitle: platformLabels[platform],
+          detail: data.event ? `${data.event}${data.offset ? ` ${data.offset}` : ''}` : null,
+        };
+
+      case 'mqtt':
+        return {
+          title: data.alias || 'MQTT',
+          subtitle: platformLabels[platform],
+          detail: data.topic || null,
+        };
+
+      case 'webhook':
+        return {
+          title: data.alias || 'Webhook',
+          subtitle: platformLabels[platform],
+          detail: data.webhook_id || null,
+        };
+
+      case 'zone':
+        return {
+          title: data.alias || 'Zone',
+          subtitle: platformLabels[platform],
+          detail: data.zone || data.entity_id || null,
+        };
+
+      default:
+        return {
+          title: data.alias || platformLabels[platform] || 'Trigger',
+          subtitle: platformLabels[platform] || platform,
+          detail: null,
+        };
+    }
+  };
+
+  const displayInfo = getDisplayInfo();
+
   return (
     <div
       className={cn(
@@ -41,16 +123,12 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         <div className="rounded bg-amber-200 p-1">
           <Zap className="h-4 w-4 text-amber-700" />
         </div>
-        <span className="font-semibold text-amber-900 text-sm">
-          {data.alias || platformLabels[data.platform] || 'Trigger'}
-        </span>
+        <span className="font-semibold text-amber-900 text-sm">{displayInfo.title}</span>
       </div>
 
       <div className="space-y-0.5 text-amber-700 text-xs">
-        <div className="font-medium">{platformLabels[data.platform] || data.platform}</div>
-        {data.entity_id && <div className="truncate opacity-75">{data.entity_id}</div>}
-        {data.to && <div className="opacity-75">to: {data.to}</div>}
-        {data.event_type && <div className="truncate opacity-75">{data.event_type}</div>}
+        <div className="font-medium">{displayInfo.subtitle}</div>
+        {displayInfo.detail && <div className="truncate opacity-75">{displayInfo.detail}</div>}
       </div>
 
       <Handle

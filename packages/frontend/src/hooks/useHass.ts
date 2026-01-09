@@ -468,6 +468,28 @@ export function useHass() {
     [services]
   );
 
+  // Send raw WebSocket message
+  const sendMessage = useCallback(
+    async <T = any>(message: Record<string, unknown>): Promise<T> => {
+      // Try WebSocket connection first
+      if (wsConnection) {
+        return wsConnection.sendMessagePromise(message) as Promise<T>;
+      }
+
+      // If embedded in HA, try to use the parent connection
+      if (isEmbedded) {
+        const hassWindow = window as unknown as { hass?: { connection?: Connection } };
+        const connection = hassWindow.hass?.connection;
+        if (connection) {
+          return connection.sendMessagePromise(message) as Promise<T>;
+        }
+      }
+
+      throw new Error('No WebSocket connection available');
+    },
+    [wsConnection, isEmbedded]
+  );
+
   return {
     hass,
     isStandalone,
@@ -482,6 +504,7 @@ export function useHass() {
     getEntitiesByDomain,
     getAllServices,
     getServiceDefinition,
+    sendMessage,
   };
 }
 
